@@ -24,9 +24,21 @@ export type PublicBenefitsCatalogRaw = {
       logoUrl: string | null;
       rubroNombre: string | null;
       direccion: string | null;
+      lat: number | null;
+      lng: number | null;
     };
   }> | null;
   total: number;
+};
+
+export type PublicBenefitsLocaleRaw = {
+  id: string;
+  nombre: string | null;
+  logoUrl: string | null;
+  lat: number;
+  lng: number;
+  rubroNombre: string | null;
+  beneficiosCount: number;
 };
 
 const AVAILABLE_CONDITION = Prisma.sql`
@@ -94,6 +106,8 @@ async function _getPublicBenefitsCatalogRaw(
         l.nombre AS "localNombre",
         l."logoUrl" AS "localLogoUrl",
         l.direccion AS "localDireccion",
+        l.lat AS "localLat",
+        l.lng AS "localLng",
         ru.nombre AS "localRubroNombre",
         l.id AS "localId",
         (${AVAILABLE_CONDITION}) AS "isAvailable",
@@ -153,7 +167,9 @@ async function _getPublicBenefitsCatalogRaw(
                 'nombre', b."localNombre",
                 'logoUrl', b."localLogoUrl",
                 'rubroNombre', b."localRubroNombre",
-                'direccion', b."localDireccion"
+                'direccion', b."localDireccion",
+                'lat', b."localLat",
+                'lng', b."localLng"
               )
             )
             ORDER BY b."localPriorityIndex" ASC, b."sortRank" ASC, b."createdAt" DESC
@@ -223,6 +239,8 @@ export async function getFeaturedPublicBenefitsRaw(limit: number): Promise<Publi
         l.nombre AS "localNombre",
         l."logoUrl" AS "localLogoUrl",
         l.direccion AS "localDireccion",
+        l.lat AS "localLat",
+        l.lng AS "localLng",
         ru.nombre AS "localRubroNombre",
         CASE
           WHEN (${AVAILABLE_CONDITION}) AND (
@@ -275,7 +293,9 @@ export async function getFeaturedPublicBenefitsRaw(limit: number): Promise<Publi
                 'nombre', b."localNombre",
                 'logoUrl', b."localLogoUrl",
                 'rubroNombre', b."localRubroNombre",
-                'direccion', b."localDireccion"
+                'direccion', b."localDireccion",
+                'lat', b."localLat",
+                'lng', b."localLng"
               )
             )
             ORDER BY b."localPriorityIndex" ASC, b."priority" ASC, b."createdAt" DESC
@@ -289,3 +309,97 @@ export async function getFeaturedPublicBenefitsRaw(limit: number): Promise<Publi
 
   return raw;
 }
+
+async function _getFilteredLocalesForPublicBenefitsRaw(
+  filters: PublicBenefitsFiltersInput = {}
+): Promise<PublicBenefitsLocaleRaw[]> {
+  const nombreFilter = filters.q
+    ? Prisma.sql`AND l.nombre ILIKE ${"%" + filters.q + "%"}`
+    : Prisma.empty;
+
+  const rubroFilter = filters.rubroId
+    ? Prisma.sql`AND l."rubroId" = ${parseInt(filters.rubroId, 10)}`
+    : Prisma.empty;
+
+  const soloHoyFilter = filters.soloHoy
+    ? Prisma.sql`AND (
+        array_length(b."diasValidos", 1) IS NULL
+        OR array_length(b."diasValidos", 1) = 0
+        OR EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int = ANY(b."diasValidos")
+      )
+      AND (${AVAILABLE_CONDITION})`
+    : Prisma.empty;
+
+  const soloDisponiblesFilter = filters.soloDisponibles
+    ? Prisma.sql`AND (${AVAILABLE_CONDITION})`
+    : Prisma.empty;
+
+  const localFilter = filters.localId
+    ? Prisma.sql`AND b."localId" = ${filters.localId}`
+    : Prisma.empty;
+
+  const beneficioStatsFilter = filters.localId
+    ? Prisma.sql`b."localId" = ${filters.localId}`
+    : Prisma.sql`b."esPublico" = true AND b."deletedAt" IS NULL`;
+
+  return prisma.$queryRaw<PublicBenefitsLocaleRaw[]>`
+    WITH beneficio_stats_cte AS (
+      SELECT
+        r."beneficioId",
+        COUNT(*) FILTER (WHERE r.estado = 'CANJEADO')::int AS canjeados
+      FROM "Reclamo" r
+      JOIN "Beneficio" b ON b.id = r."beneficioId"
+      WHERE ${beneficioStatsFilter}
+      GROUP BY r."beneficioId"
+    ),
+    filtered_beneficios_cte AS (
+      SELECT
+        b.id,
+        b."localId"
+      FROM "Beneficio" b
+      JOIN "Local" l ON l.id = b."localId"
+      LEFT JOIN beneficio_stats_cte bs ON bs."beneficioId" = b.id
+      WHERE b."esPublico" = true
+        AND b."deletedAt" IS NULL
+        AND l.lat IS NOT NULL
+        AND l.lng IS NOT NULL
+        AND l."isTest" = false
+        AND l."active" = true
+        ${nombreFilter}
+        ${rubroFilter}
+        ${soloHoyFilter}
+        ${soloDisponiblesFilter}
+        ${localFilter}
+    )
+    SELECT
+      l.id,
+      l.nombre,
+      l."logoUrl",
+      l.lat,
+      l.lng,
+      ru.nombre AS "rubroNombre",
+      COUNT(fb.id)::int AS "beneficiosCount"
+    FROM filtered_beneficios_cte fb
+    JOIN "Local" l ON l.id = fb."localId"
+    LEFT JOIN "Rubro" ru ON ru.id = l."rubroId"
+    GROUP BY l.id, l.nombre, l."logoUrl", l.lat, l.lng, ru.nombre
+    ORDER BY l.nombre ASC NULLS LAST
+  `;
+}
+
+export const getFilteredLocalesForPublicBenefitsRaw = (filters: PublicBenefitsFiltersInput = {}) => {
+  const cacheKey = [
+    "public-benefits-locales",
+    filters.q ?? "",
+    filters.rubroId ?? "",
+    filters.localId ?? "",
+    filters.soloHoy ? "1" : "0",
+    filters.soloDisponibles ? "1" : "0",
+  ];
+
+  return unstable_cache(
+    async () => _getFilteredLocalesForPublicBenefitsRaw(filters),
+    cacheKey,
+    { revalidate: 60 }
+  )();
+};

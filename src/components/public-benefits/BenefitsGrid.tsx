@@ -32,26 +32,39 @@ export default async function BenefitsGrid({
       />
 
       {totalPages > 1 ? (
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:flex sm:items-center sm:justify-between sm:gap-3">
           <LinkButton
             href={hasPrevious ? buildPageUrl(page - 1, filterParams) : buildPageUrl(1, filterParams)}
             variant="secondary"
             size="sm"
-            className={hasPrevious ? "w-full sm:w-auto" : "pointer-events-none w-full opacity-50 sm:w-auto"}
+            className={
+              hasPrevious
+                ? "min-w-0 px-2 text-[12px] sm:w-auto sm:px-3 sm:text-sm"
+                : "pointer-events-none min-w-0 px-2 text-[12px] opacity-50 sm:w-auto sm:px-3 sm:text-sm"
+            }
             aria-disabled={!hasPrevious}
           >
             ← Anterior
           </LinkButton>
 
-          <p className="text-center text-sm text-text-muted">
-            Página {Math.min(page, Math.max(totalPages, 1))} de {totalPages} · {total}
+          <p className="text-center text-[11px] leading-none text-text-muted sm:text-sm sm:leading-normal">
+            <span className="sm:hidden">
+              {Math.min(page, Math.max(totalPages, 1))}/{totalPages}
+            </span>
+            <span className="hidden sm:inline">
+              Página {Math.min(page, Math.max(totalPages, 1))} de {totalPages} · {total}
+            </span>
           </p>
 
           <LinkButton
             href={hasNext ? buildPageUrl(page + 1, filterParams) : buildPageUrl(page, filterParams)}
             variant="secondary"
             size="sm"
-            className={hasNext ? "w-full sm:w-auto" : "pointer-events-none w-full opacity-50 sm:w-auto"}
+            className={
+              hasNext
+                ? "min-w-0 px-2 text-[12px] sm:w-auto sm:px-3 sm:text-sm"
+                : "pointer-events-none min-w-0 px-2 text-[12px] opacity-50 sm:w-auto sm:px-3 sm:text-sm"
+            }
             aria-disabled={!hasNext}
           >
             Siguiente →
@@ -64,7 +77,7 @@ export default async function BenefitsGrid({
 
 export function BenefitsGridSkeleton() {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}

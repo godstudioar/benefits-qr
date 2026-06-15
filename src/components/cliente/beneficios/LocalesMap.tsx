@@ -126,10 +126,16 @@ export default function LocalesMap({
   locales,
   userCoords,
   heightClassName = "h-[70vh]",
+  benefitCountLabel = "vigentes",
+  benefitsHrefSearchParams = "",
+  emptyStateMessage = "Todavía no hay locales ubicados en el mapa.",
 }: {
   locales: LocalConBeneficiosRaw[];
   userCoords: LatLng | null;
   heightClassName?: string;
+  benefitCountLabel?: "vigentes" | "coincidentes";
+  benefitsHrefSearchParams?: string;
+  emptyStateMessage?: string;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const apiIsLoaded = useApiIsLoaded();
@@ -177,11 +183,29 @@ export default function LocalesMap({
     selected && userCoords
       ? formatDistance(haversineKm(userCoords, { lat: selected.lat, lng: selected.lng }))
       : null;
+  const selectedBenefitsLabel =
+    selected?.beneficiosCount === 1
+      ? benefitCountLabel === "coincidentes"
+        ? "beneficio que coincide"
+        : "beneficio vigente"
+      : benefitCountLabel === "coincidentes"
+        ? "beneficios que coinciden"
+        : "beneficios vigentes";
+  const selectedEmptyLabel =
+    benefitCountLabel === "coincidentes" ? "Sin beneficios que coincidan" : "Sin beneficios vigentes";
+
+  function buildSelectedBenefitsHref(localId: string) {
+    const params = new URLSearchParams(benefitsHrefSearchParams);
+    params.set("local", localId);
+
+    const query = params.toString();
+    return query ? `/beneficios?${query}` : "/beneficios";
+  }
 
   if (locales.length === 0) {
     return (
       <div className={`flex ${heightClassName} items-center justify-center rounded-2xl border border-border-default bg-surface-muted p-6 text-center text-sm text-text-muted`}>
-        Todavía no hay locales ubicados en el mapa.
+        {emptyStateMessage}
       </div>
     );
   }
@@ -222,19 +246,18 @@ export default function LocalesMap({
               </div>
               {selected.beneficiosCount > 0 ? (
                 <p className="text-xs text-text-muted">
-                  {selected.beneficiosCount}{" "}
-                  {selected.beneficiosCount === 1 ? "beneficio vigente" : "beneficios vigentes"}
+                  {selected.beneficiosCount} {selectedBenefitsLabel}
                   {distanceLabel ? ` · a ${distanceLabel}` : ""}
                 </p>
               ) : (
                 <p className="text-xs text-text-muted">
-                  Sin beneficios vigentes
+                  {selectedEmptyLabel}
                   {distanceLabel ? ` · a ${distanceLabel}` : ""}
                 </p>
               )}
               {selected.beneficiosCount > 0 && (
                 <Link
-                  href={`/beneficios?local=${encodeURIComponent(selected.id)}`}
+                  href={buildSelectedBenefitsHref(selected.id)}
                   className="inline-block text-xs font-semibold text-primary hover:text-accent"
                 >
                   Ver beneficios →
