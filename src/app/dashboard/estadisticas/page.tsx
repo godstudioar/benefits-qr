@@ -11,6 +11,7 @@ import TrendSparkline from "@/components/local/dashboard/stats/TrendSparkline";
 import TopCupones from "@/components/local/dashboard/stats/TopCupones";
 import TopClientes from "@/components/local/dashboard/stats/TopClientes";
 import StatusDistribution from "@/components/local/dashboard/stats/StatusDistribution";
+import { SHADOW } from "@/lib/shadowStyles";
 
 const PAGE_SIZE = 10;
 
@@ -56,6 +57,7 @@ export default async function DashboardStatsPage() {
             label="Cupones"
             value={totalBeneficios}
             variant="light"
+            elevated
             className="h-full bg-surface p-2.5"
             labelClassName="text-[8px] leading-tight tracking-[0.06em]"
             valueClassName="text-base sm:text-2xl lg:text-xl 2xl:text-2xl"
@@ -66,6 +68,7 @@ export default async function DashboardStatsPage() {
             label="Vencen en 7 días"
             value={proximosAVencer}
             variant="light"
+            elevated
             className="h-full bg-surface p-2.5"
             labelClassName="text-[8px] leading-tight tracking-[0.06em]"
             valueClassName="text-base sm:text-2xl lg:text-xl 2xl:text-2xl"
@@ -76,6 +79,7 @@ export default async function DashboardStatsPage() {
             label="Reclamos"
             value={totalReclamos}
             variant="light"
+            elevated
             className="h-full bg-surface p-2.5"
             labelClassName="text-[8px] leading-tight tracking-[0.06em]"
             valueClassName="text-base sm:text-2xl lg:text-xl 2xl:text-2xl"
@@ -86,6 +90,7 @@ export default async function DashboardStatsPage() {
             label="Canjeados"
             value={totalCanjeados}
             variant="light"
+            elevated
             className="h-full bg-surface p-2.5"
             labelClassName="text-[8px] leading-tight tracking-[0.06em]"
             valueClassName="text-base sm:text-2xl lg:text-xl 2xl:text-2xl"
@@ -96,6 +101,7 @@ export default async function DashboardStatsPage() {
             label="Tasa canje (%)"
             value={tasaCanje}
             variant="light"
+            elevated
             className="h-full bg-surface p-2.5"
             labelClassName="text-[8px] leading-tight tracking-[0.06em]"
             valueClassName="text-base sm:text-2xl lg:text-xl 2xl:text-2xl"
@@ -106,6 +112,7 @@ export default async function DashboardStatsPage() {
             label="Clientes únicos"
             value={clientesUnicos}
             variant="light"
+            elevated
             className="h-full bg-surface p-2.5"
             labelClassName="text-[8px] leading-tight tracking-[0.06em]"
             valueClassName="text-base sm:text-2xl lg:text-xl 2xl:text-2xl"
@@ -116,6 +123,7 @@ export default async function DashboardStatsPage() {
             label="% Recurrencia"
             value={stats.recurrence.porcentajeRecurrencia}
             variant="light"
+            elevated
             className="h-full bg-surface p-2.5"
             labelClassName="text-[8px] leading-tight tracking-[0.06em]"
             valueClassName="text-base sm:text-2xl lg:text-xl 2xl:text-2xl"
@@ -134,7 +142,7 @@ export default async function DashboardStatsPage() {
       </div>
 
       <Reveal y={12} amount={0.15} className="mb-4 sm:mb-5 lg:mb-4 2xl:mb-5">
-        <Card className="border-surface/80 bg-surface/95 p-4 sm:bg-surface/85 sm:p-5 lg:p-4 2xl:p-5">
+        <Card className={`border-surface/80 bg-surface/95 p-4 ${SHADOW.cardBase} sm:bg-surface/85 sm:p-5 lg:p-4 2xl:p-5`}>
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-text-muted sm:text-xs lg:text-[11px] 2xl:text-xs">
             Tendencia — últimos 30 días
           </p>
@@ -156,7 +164,7 @@ export default async function DashboardStatsPage() {
       </Reveal>
 
       <Reveal y={12} delay={0.12} amount={0.15} className="mb-4 sm:mb-5 lg:mb-4 2xl:mb-5">
-        <Card className="h-full border-surface/80 bg-surface/95 p-4 sm:bg-surface/85 sm:p-5 lg:p-4 2xl:p-5">
+        <Card className={`h-full border-surface/80 bg-surface/95 p-4 ${SHADOW.cardBase} sm:bg-surface/85 sm:p-5 lg:p-4 2xl:p-5`}>
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-text-muted sm:text-xs lg:text-[11px] 2xl:text-xs">
             Top cupones por rendimiento
           </p>
@@ -165,7 +173,7 @@ export default async function DashboardStatsPage() {
       </Reveal>
 
       <Reveal y={12} delay={0.18} amount={0.15} className="mb-4 sm:mb-5 lg:mb-4 2xl:mb-5">
-        <Card className="h-full border-surface/80 bg-surface/95 p-4 sm:bg-surface/85 sm:p-5 lg:p-4 2xl:p-5">
+        <Card className={`h-full border-surface/80 bg-surface/95 p-4 ${SHADOW.cardBase} sm:bg-surface/85 sm:p-5 lg:p-4 2xl:p-5`}>
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-text-muted sm:text-xs lg:text-[11px] 2xl:text-xs">
             Top clientes
           </p>
@@ -174,7 +182,7 @@ export default async function DashboardStatsPage() {
       </Reveal>
 
       <Reveal y={12} delay={0.24} amount={0.15}>
-        <Card className="border-surface/80 bg-surface/95 p-4 sm:bg-surface/85 sm:p-5 lg:p-4 2xl:p-5">
+        <Card className={`border-surface/80 bg-surface/95 p-4 ${SHADOW.cardBase} sm:bg-surface/85 sm:p-5 lg:p-4 2xl:p-5`}>
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-text-muted sm:text-xs lg:text-[11px] 2xl:text-xs">
             Salud de cupones
           </p>

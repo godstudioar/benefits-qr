@@ -1,4 +1,5 @@
 import Card from "@/components/ui/Card";
+import { SHADOW } from "@/lib/shadowStyles";
 
 export default function MisBeneficiosLoading() {
   return (
@@ -8,7 +9,7 @@ export default function MisBeneficiosLoading() {
         <div className="h-4 w-72 animate-pulse rounded bg-surface-muted" />
       </div>
       <div className="mb-5 sm:mb-6 lg:mb-5 2xl:mb-6">
-        <Card className="rounded-xl border-border-strong/40 bg-primary p-3 sm:p-4">
+        <Card className={`rounded-xl border-border-strong/40 bg-primary p-3 sm:p-4 ${SHADOW.accentBase}`}>
           <div className="mb-1 h-3 w-32 animate-pulse rounded bg-primary-foreground/20" />
           <div className="h-7 w-8 animate-pulse rounded bg-primary-foreground/30" />
         </Card>
@@ -17,7 +18,7 @@ export default function MisBeneficiosLoading() {
         {[0, 1, 2].map((i) => (
           <Card
             key={i}
-            className="overflow-hidden border-surface/80 bg-surface/95 shadow-sm shadow-accent-soft/25"
+            className={`overflow-hidden border-surface/80 bg-surface/95 ${SHADOW.accentBase}`}
           >
             <div className="h-1 bg-gradient-to-r from-primary to-accent opacity-30" />
              <div className="p-4 sm:p-5 lg:p-4 2xl:p-5">

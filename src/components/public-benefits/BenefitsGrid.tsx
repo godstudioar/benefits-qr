@@ -1,7 +1,9 @@
 import type { PublicBenefitsFiltersInput } from "@/server/services/publicBenefitsService";
 import { getPublicBenefitsPageData } from "@/server/services/publicBenefitsService";
 import PublicBenefitsList from "@/components/public-benefits/PublicBenefitsList";
+import Card from "@/components/ui/Card";
 import LinkButton from "@/components/ui/LinkButton";
+import { SHADOW } from "@/lib/shadowStyles";
 
 function buildPageUrl(page: number, filterParams: URLSearchParams) {
   const next = new URLSearchParams(filterParams);
@@ -79,11 +81,13 @@ export function BenefitsGridSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div
+        <Card
           key={i}
-          className="h-64 animate-pulse rounded-2xl bg-surface-muted"
+          className={`h-64 overflow-hidden border-surface/80 bg-surface/95 ${SHADOW.cardBase} sm:bg-surface/85 sm:backdrop-blur-md`}
           style={{ animationDelay: `${i * 60}ms` }}
-        />
+        >
+          <div className="h-full w-full animate-pulse bg-surface-muted" />
+        </Card>
       ))}
     </div>
   );

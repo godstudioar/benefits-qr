@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, Filter, LocateFixed, MapPin, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SHADOW } from "@/lib/shadowStyles";
 import { usePublicBenefitsLocation } from "@/components/public-benefits/PublicBenefitsLocationContext";
 import {
   Select,
@@ -247,7 +248,7 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
         <button
           type="button"
           onClick={() => setIsOpen((v) => !v)}
-          className="flex w-full items-center gap-2 overflow-hidden rounded-2xl border border-surface/80 bg-surface/95 px-4 py-2.5 text-sm font-medium text-text-primary shadow-sm shadow-primary-soft/25"
+          className={`flex w-full items-center gap-2 overflow-hidden rounded-2xl border border-surface/80 bg-surface/95 px-4 py-2.5 text-sm font-medium text-text-primary ${SHADOW.cardBase}`}
         >
           <Filter className="h-4 w-4 shrink-0 text-text-muted" />
           <span>Filtros</span>
@@ -273,7 +274,7 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
 
       {/* Desktop: card container — same visual DNA as PublicBenefitCard */}
       <div className="hidden sm:block">
-        <div className="overflow-hidden rounded-2xl border border-surface/80 bg-surface/95 shadow-sm shadow-primary-soft/25 sm:bg-surface/85 sm:backdrop-blur-md">
+        <div className={`overflow-hidden rounded-2xl border border-surface/80 bg-surface/95 ${SHADOW.cardBase} sm:bg-surface/85 sm:backdrop-blur-md`}>
           <div className="h-1 bg-gradient-to-r from-primary to-accent" />
           <div className="px-4 py-3">
             {controls}

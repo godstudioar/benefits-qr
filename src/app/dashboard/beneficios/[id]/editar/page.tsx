@@ -5,6 +5,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import { getSessionFromCookies } from "@/lib/auth";
 import { UserType } from "@/lib/enums";
 import { getBeneficioEditPageData } from "@/server/services/beneficiosApiService";
+import { SHADOW } from "@/lib/shadowStyles";
 import { redirect } from "next/navigation";
 
 export default async function EditarBeneficioPage({
@@ -39,7 +40,7 @@ export default async function EditarBeneficioPage({
         className="mb-5 sm:mb-6 lg:mb-5 2xl:mb-6"
       />
 
-      <Card className="w-full border-surface/80 bg-surface/95 p-5 shadow-sm shadow-accent-soft/25 sm:bg-surface/85 sm:p-6 lg:p-5 2xl:p-6">
+      <Card className={`w-full border-surface/80 bg-surface/95 p-5 ${SHADOW.accentBase} sm:bg-surface/85 sm:p-6 lg:p-5 2xl:p-6`}>
         <BeneficioForm
           mode="edit"
           initialData={beneficio.initialData}

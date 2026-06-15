@@ -12,7 +12,9 @@ import {
   type ReclamoEffectiveStatus as ReclamoEffectiveStatusType,
 } from "@/lib/couponStatus";
 import { formatDateAR, formatDateTimeAR } from "@/lib/dates";
+import { INTERACTION, SHADOW } from "@/lib/shadowStyles";
 import { getReclamoStatusPresentation } from "@/lib/statusPresentation";
+
 
 type Reclamo = {
   id: string;
@@ -38,7 +40,7 @@ export default function MisBeneficiosList({
 
   if (reclamos.length === 0) {
     return (
-      <Card className="border-surface/80 bg-surface/95 p-10 text-center shadow-sm shadow-accent-soft/25 sm:bg-surface/85 sm:p-12 lg:p-9 2xl:p-12">
+      <Card className={`border-surface/80 bg-surface/95 p-10 text-center ${SHADOW.accentBase} sm:bg-surface/85 sm:p-12 lg:p-9 2xl:p-12`}>
         <p className="text-text-muted">No tenés cupones reclamados aún</p>
       </Card>
     );
@@ -54,7 +56,7 @@ export default function MisBeneficiosList({
         return (
           <Card
             key={r.id}
-            className="overflow-hidden border-surface/80 bg-surface/95 shadow-sm shadow-accent-soft/25 sm:bg-surface/85"
+            className={`overflow-hidden border-surface/80 bg-surface/95 ${SHADOW.accentBase} ${INTERACTION.hoverLift} ${SHADOW.accentHover} sm:bg-surface/85`}
           >
             <div className="h-1 bg-gradient-to-r from-primary to-accent" />
             <div className="p-4 sm:p-5 lg:p-4 2xl:p-5">

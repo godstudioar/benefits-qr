@@ -5,8 +5,10 @@ import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
 import Card from "@/components/ui/Card";
 import LogoFrame from "@/components/ui/LogoFrame";
 import { formatDateAR } from "@/lib/dates";
+import { INTERACTION, SHADOW } from "@/lib/shadowStyles";
 import { cn } from "@/lib/utils";
 import type { PublicBenefitCardData } from "@/server/services/publicBenefitsService";
+
 
 export default function PublicBenefitCard({
   benefit,
@@ -27,7 +29,7 @@ export default function PublicBenefitCard({
       aria-label={`Ver beneficio ${benefit.descripcion}`}
       className="group block h-full"
     >
-      <Card className="h-full overflow-hidden border-surface/80 bg-surface/95 shadow-sm shadow-primary-soft/25 transition-[transform,box-shadow,border-color] duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/25 group-hover:shadow-md sm:bg-surface/85 sm:backdrop-blur-md">
+      <Card className={`h-full overflow-hidden border-surface/80 bg-surface/95 ${SHADOW.cardBase} ${INTERACTION.groupHoverLift} ${SHADOW.cardGroupHover} sm:bg-surface/85 sm:backdrop-blur-md`}>
         <div className="flex h-full items-start gap-4 p-4 sm:p-5">
           <LogoFrame
             src={benefit.local.logoUrl}

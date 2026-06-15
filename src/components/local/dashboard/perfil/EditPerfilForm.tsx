@@ -9,6 +9,7 @@ import Card from "@/components/ui/Card";
 import RubroSelect from "@/components/local/RubroSelect";
 import MapsProvider from "@/components/maps/MapsProvider";
 import AddressAutocomplete, { type SelectedAddress } from "@/components/maps/AddressAutocomplete";
+import { SHADOW } from "@/lib/shadowStyles";
 
 interface EditPerfilFormProps {
   email: string;
@@ -136,7 +137,7 @@ export default function EditPerfilForm({
 
   return (
     <MapsProvider>
-    <Card className="w-full max-w-md border-surface/80 bg-surface/95 p-6 shadow-xl shadow-border-default/60 sm:bg-surface/85 sm:backdrop-blur-md sm:p-7 lg:max-w-sm lg:p-6 2xl:max-w-md 2xl:p-7">
+    <Card className={`w-full max-w-md border-surface/80 bg-surface/95 p-6 ${SHADOW.accentBase} sm:bg-surface/85 sm:backdrop-blur-md sm:p-7 lg:max-w-sm lg:p-6 2xl:max-w-md 2xl:p-7`}>
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 lg:space-y-4 2xl:space-y-5">
         <div className="mb-1.5 flex flex-col items-center gap-1 lg:mb-1 2xl:mb-1.5">
           <LogoUpload

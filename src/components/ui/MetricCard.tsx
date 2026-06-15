@@ -1,5 +1,6 @@
 import Card from "@/components/ui/Card";
 import type { SemanticVisualVariant } from "@/components/ui/buttonStyles";
+import { SHADOW } from "@/lib/shadowStyles";
 import { cn } from "@/lib/utils";
 
 export type MetricCardVariant = Extract<
@@ -11,6 +12,7 @@ interface MetricCardProps {
   label: string;
   value: number | string;
   variant?: MetricCardVariant;
+  elevated?: boolean;
   className?: string;
   labelClassName?: string;
   valueClassName?: string;
@@ -21,7 +23,7 @@ const metricCardStyles: Record<
   { wrapper: string; label: string; value: string }
 > = {
   muted: {
-    wrapper: "border-surface/80 bg-surface/95 shadow-sm shadow-primary-soft/40 sm:bg-surface/85",
+    wrapper: "border-surface/80 bg-surface/95 sm:bg-surface/85",
     label: "text-text-muted",
     value: "text-text-primary",
   },
@@ -36,7 +38,7 @@ const metricCardStyles: Record<
     value: "text-accent-foreground",
   },
   primary: {
-    wrapper: "border-border-strong/40 bg-primary shadow-md shadow-primary-soft/60",
+    wrapper: "border-border-strong/40 bg-primary",
     label: "text-text-soft",
     value: "text-primary-foreground",
   },
@@ -51,6 +53,7 @@ export default function MetricCard({
   label,
   value,
   variant = "secondary",
+  elevated = false,
   className,
   labelClassName,
   valueClassName,
@@ -62,6 +65,7 @@ export default function MetricCard({
       className={cn(
         "h-full rounded-xl p-3 sm:p-4 lg:p-3.5 2xl:p-4",
         styles.wrapper,
+        elevated && SHADOW.accentBase,
         className
       )}
       data-variant={variant}

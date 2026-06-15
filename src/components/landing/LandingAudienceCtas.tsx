@@ -2,6 +2,7 @@ import { ArrowRight, Building2, Check, Gift } from "lucide-react";
 import LinkButton from "@/components/ui/LinkButton";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeader from "@/components/ui/SectionHeader";
+import { SHADOW } from "@/lib/shadowStyles";
 
 const AUDIENCE_CTAS = [
   {
@@ -14,7 +15,10 @@ const AUDIENCE_CTAS = [
     action: "Ingresar como negocio",
     icon: <Building2 className="h-5 w-5" aria-hidden="true" />,
     className:
-      "border-surface/80 bg-surface/90 shadow-lg shadow-primary-soft/70 hover:shadow-xl hover:shadow-accent-soft lg:bg-surface/75 sm:backdrop-blur-md",
+      "border-surface/80 bg-surface/90 lg:bg-surface/75 sm:backdrop-blur-md " +
+      SHADOW.heroBase +
+      " " +
+      SHADOW.heroHover,
     iconClassName: "bg-primary-soft text-primary",
     titleClassName: "text-text-primary",
     descriptionClassName: "text-text-muted",
@@ -32,7 +36,10 @@ const AUDIENCE_CTAS = [
     action: "Ingresar como cliente",
     icon: <Gift className="h-5 w-5" aria-hidden="true" />,
     className:
-      "border-primary-foreground/20 bg-primary shadow-lg shadow-primary/30 hover:bg-accent hover:shadow-xl hover:shadow-primary/40",
+      "border-primary-foreground/20 bg-primary hover:bg-accent " +
+      SHADOW.heroBase +
+      " " +
+      SHADOW.heroHover,
     iconClassName: "bg-surface/20 text-primary-foreground",
     titleClassName: "text-primary-foreground",
     descriptionClassName: "text-primary-foreground/80",

@@ -1,4 +1,5 @@
 import Card from "@/components/ui/Card";
+import { SHADOW } from "@/lib/shadowStyles";
 
 export default function BeneficioStatsLoading() {
   return (
@@ -9,7 +10,7 @@ export default function BeneficioStatsLoading() {
         <div className="h-4 w-80 max-w-full rounded bg-surface-soft animate-pulse" />
       </div>
 
-      <Card className="relative mb-6 border-surface/80 bg-surface/95 p-4 shadow-sm shadow-primary-soft/25 sm:bg-surface/85 sm:p-6 lg:p-5 2xl:p-6">
+      <Card className={`relative mb-6 border-surface/80 bg-surface/95 p-4 ${SHADOW.accentBase} sm:bg-surface/85 sm:p-6 lg:p-5 2xl:p-6`}>
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-4">
             <div className="space-y-2 pr-12 sm:pr-36">

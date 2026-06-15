@@ -12,6 +12,7 @@ import { formatDateAR } from "@/lib/dates";
 import { UserType } from "@/lib/enums";
 import { getLocalLogoDisplayUrl } from "@/lib/localLogoSource";
 import { getBeneficioStatusPresentation } from "@/lib/statusPresentation";
+import { INTERACTION, SHADOW } from "@/lib/shadowStyles";
 import { getDashboardPageData } from "@/server/services/dashboardService";
 import { redirect } from "next/navigation";
 
@@ -50,7 +51,7 @@ export default async function DashboardPage({
   return (
     <main className="mx-auto max-w-5xl px-4 pt-6 pb-32 sm:px-6 sm:pt-8 sm:pb-16 lg:max-w-4xl lg:pt-7 lg:pb-14 2xl:max-w-5xl 2xl:pt-8 2xl:pb-16">
       <Reveal y={10} amount={0.2} className="mb-5 sm:mb-6">
-        <div className="rounded-2xl border border-surface/80 bg-surface/95 p-3 shadow-sm shadow-primary-soft/40 sm:bg-surface/85 sm:p-4 lg:p-3.5 2xl:p-4">
+        <div className={`rounded-2xl border border-surface/80 bg-surface/95 p-3 ${SHADOW.focalBase} sm:bg-surface/85 sm:p-4 lg:p-3.5 2xl:p-4`}>
           <div className="flex items-start justify-between gap-4 lg:gap-3 2xl:gap-4">
             <div className="flex min-w-0 items-start gap-4">
               <div className="shrink-0">
@@ -91,7 +92,7 @@ export default async function DashboardPage({
       {/* Beneficios */}
       <div id="mis-cupones" className="scroll-mt-24">
         <Reveal y={8} amount={0.2} className="mb-4">
-          <div className="flex flex-col gap-3 rounded-2xl border border-surface/80 bg-surface/95 p-4 sm:bg-surface/85 sm:p-5 lg:gap-2.5 lg:p-4 2xl:gap-3 2xl:p-5">
+          <div className={`flex flex-col gap-3 rounded-2xl border border-surface/80 bg-surface/95 p-4 ${SHADOW.cardBase} sm:bg-surface/85 sm:p-5 lg:gap-2.5 lg:p-4 2xl:gap-3 2xl:p-5`}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-xl font-bold text-text-primary lg:text-lg 2xl:text-xl">Mis cupones</h2>
@@ -109,7 +110,7 @@ export default async function DashboardPage({
 
       {totalBeneficios === 0 ? (
         <Reveal y={12} amount={0.2}>
-           <Card className="border-surface/70 bg-surface/90 p-10 text-center sm:bg-surface/75 sm:backdrop-blur-md sm:p-12 lg:p-9 2xl:p-12">
+           <Card className={`border-surface/70 bg-surface/90 p-10 text-center ${SHADOW.accentBase} sm:bg-surface/75 sm:backdrop-blur-md sm:p-12 lg:p-9 2xl:p-12`}>
             <p className="mb-2 text-base font-medium text-text-primary">
               No tenés cupones aún
             </p>
@@ -141,7 +142,7 @@ export default async function DashboardPage({
                 amount={0.15}
               >
                 <Card
-                   className={`relative border border-surface/80 border-l-4 ${status.dashboardCardToneClassName} ${status.dashboardCardSurfaceClassName} p-3 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5 lg:p-4 2xl:p-5`}
+                    className={`relative border border-surface/80 border-l-4 ${status.dashboardCardToneClassName} ${status.dashboardCardSurfaceClassName} p-3 ${SHADOW.cardBase} ${INTERACTION.hoverLift} ${SHADOW.cardHover} sm:p-5 lg:p-4 2xl:p-5`}
                 >
                   <div className="absolute top-3 right-3 flex flex-col gap-2 sm:hidden">
                     <LinkButton

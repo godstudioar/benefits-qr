@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import { SHADOW } from "@/lib/shadowStyles";
 import { ReclamoEffectiveStatus } from "@/lib/couponStatus";
 
 interface QRDisplayProps {
@@ -214,7 +215,7 @@ export default function QRDisplay({ reclamoId, onRedeemed }: QRDisplayProps) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border-default/70 bg-white p-4 shadow-sm shadow-border-default/50 lg:p-3.5 2xl:p-4">
+      <div className={`rounded-2xl border border-border-default/70 bg-white p-4 ${SHADOW.focalBase} lg:p-3.5 2xl:p-4`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={qrDataURL}

@@ -17,6 +17,7 @@ import { sortDiasValidos } from "@/lib/beneficioSchedule";
 import { evaluateBeneficioState } from "@/lib/couponStatus";
 import { DIRECT_QR_FLOW } from "@/lib/flows";
 import { getBeneficioAvailabilityPresentation } from "@/lib/statusPresentation";
+import { SHADOW } from "@/lib/shadowStyles";
 import { getClienteSessionFromCookies } from "@/lib/auth";
 
 export default async function BeneficioPublicoPage({
@@ -129,7 +130,7 @@ export default async function BeneficioPublicoPage({
         </Reveal>
 
         <Reveal delay={0.06} y={16} amount={0.35}>
-          <Card className="overflow-hidden border-surface/80 bg-surface/90 shadow-xl shadow-primary-soft/60 sm:bg-surface/80 sm:backdrop-blur-md">
+          <Card className={`overflow-hidden border-surface/80 bg-surface/90 ${SHADOW.focalBase} sm:bg-surface/80 sm:backdrop-blur-md`}>
             <div className="h-1.5 bg-gradient-to-r from-primary to-accent" />
 
             <div className="space-y-5 p-6 sm:p-8 lg:space-y-4 lg:p-6 2xl:space-y-5 2xl:p-8">

@@ -1,4 +1,5 @@
 import IPhoneMockup from "@/components/landing/IPhoneMockup";
+import { INTERACTION, SHADOW } from "@/lib/shadowStyles";
 import Card from "@/components/ui/Card";
 
 export type StepShowcaseItem = {
@@ -20,8 +21,7 @@ export default function StepShowcaseCard({
 }: StepShowcaseItem) {
   return (
     <Card
-      className="h-full overflow-hidden p-4 duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5 lg:p-4 2xl:p-5"
-      style={{ transitionProperty: "transform, box-shadow" }}
+      className={`h-full overflow-hidden p-4 ${SHADOW.cardBase} ${INTERACTION.hoverLift} ${SHADOW.cardHover} sm:p-5 lg:p-4 2xl:p-5`}
     >
       <span className="block text-xs font-semibold uppercase tracking-widest text-primary">
         {actorLabel}

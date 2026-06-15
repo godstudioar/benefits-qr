@@ -1,3 +1,6 @@
+import Card from "@/components/ui/Card";
+import { SHADOW } from "@/lib/shadowStyles";
+
 export default function Loading() {
   return (
     <main className="relative px-4 pt-24 pb-14 sm:px-6 lg:px-8 lg:pb-16">
@@ -20,11 +23,13 @@ export default function Loading() {
         {/* Grid skeleton */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div
+            <Card
               key={i}
-              className="h-64 animate-pulse rounded-2xl bg-surface-muted"
+              className={`h-64 overflow-hidden border-surface/80 bg-surface/95 ${SHADOW.cardBase} sm:bg-surface/85 sm:backdrop-blur-md`}
               style={{ animationDelay: `${i * 60}ms` }}
-            />
+            >
+              <div className="h-full w-full animate-pulse bg-surface-muted" />
+            </Card>
           ))}
         </div>
       </div>
