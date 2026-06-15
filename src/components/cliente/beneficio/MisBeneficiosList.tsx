@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { QrCode, CircleAlert, Clock } from "lucide-react";
+import { QrCode, CircleAlert } from "lucide-react";
+import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import QRDisplay from "@/components/cliente/beneficio/QRDisplay";
@@ -11,7 +12,6 @@ import {
   type ReclamoEffectiveStatus as ReclamoEffectiveStatusType,
 } from "@/lib/couponStatus";
 import { formatDateAR, formatDateTimeAR } from "@/lib/dates";
-import { formatDiasValidosSentence } from "@/lib/beneficioSchedule";
 import { getReclamoStatusPresentation } from "@/lib/statusPresentation";
 
 type Reclamo = {
@@ -96,14 +96,10 @@ export default function MisBeneficiosList({
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted lg:text-[11px] 2xl:text-xs">
                       <span>Vence: {formatDateAR(r.beneficio.fechaExpiracion)}</span>
                     </div>
-                    {r.beneficio.diasValidos?.length > 0 && (
-                      <div className="flex items-center gap-1 text-xs text-text-muted/80 lg:text-[11px] 2xl:text-xs">
-                        <Clock className="h-3 w-3" aria-hidden="true" />
-                        <span className="line-clamp-1">
-                          {formatDiasValidosSentence(r.beneficio.diasValidos, { style: "short" })}
-                        </span>
-                      </div>
-                    )}
+                    <BenefitWeekdays
+                      diasValidos={r.beneficio.diasValidos}
+                      className="text-text-muted/80 lg:text-[11px] 2xl:text-xs"
+                    />
                   </div>
                 </div>
                 <Badge variant={status.badgeVariant}>{status.label}</Badge>

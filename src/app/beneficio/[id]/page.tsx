@@ -5,6 +5,7 @@ import { EstadoReclamo } from "@/generated/prisma/client";
 export const revalidate = 60;
 import Badge from "@/components/ui/Badge";
 import BrandLogo from "@/components/ui/BrandLogo";
+import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
 import Card from "@/components/ui/Card";
 import LogoFrame from "@/components/ui/LogoFrame";
 import ReclamarForm from "@/components/cliente/beneficio/ReclamarForm";
@@ -12,10 +13,7 @@ import LinkButton from "@/components/ui/LinkButton";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { formatDateAR } from "@/lib/dates";
-import {
-  formatDiasValidosSentence,
-  sortDiasValidos,
-} from "@/lib/beneficioSchedule";
+import { sortDiasValidos } from "@/lib/beneficioSchedule";
 import { evaluateBeneficioState } from "@/lib/couponStatus";
 import { DIRECT_QR_FLOW } from "@/lib/flows";
 import { getBeneficioAvailabilityPresentation } from "@/lib/statusPresentation";
@@ -79,7 +77,6 @@ export default async function BeneficioPublicoPage({
     canjeados: beneficio.reclamos.length,
     diasValidos,
   });
-  const tieneRestriccion = diasValidos.length > 0;
   const diasValidosOrdenados = sortDiasValidos(diasValidos);
   const localName = beneficio.local.nombre ?? "Local adherido";
   const mapsUrl = beneficio.local.direccion
@@ -207,14 +204,7 @@ export default async function BeneficioPublicoPage({
                       {beneficio.reclamos.length}/{beneficio.maxUsos} usos
                     </Badge>
                   ) : null}
-                  {tieneRestriccion ? (
-                    <Badge variant="muted" className="px-3 py-1">
-                      {formatDiasValidosSentence(diasValidosOrdenados, {
-                        emptyLabel: "",
-                        prefix: "Válido los",
-                      })}
-                    </Badge>
-                  ) : null}
+                  <BenefitWeekdays diasValidos={diasValidosOrdenados} />
                 </div>
               </div>
 

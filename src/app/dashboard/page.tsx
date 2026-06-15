@@ -1,5 +1,6 @@
 import DashboardRefreshButton from "@/components/local/dashboard/DashboardRefreshButton";
 import ShareButtons from "@/components/local/dashboard/ShareButtons";
+import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
 import Badge from "@/components/ui/Badge";
 import Card from "@/components/ui/Card";
 import LinkButton from "@/components/ui/LinkButton";
@@ -7,7 +8,6 @@ import LogoFrame from "@/components/ui/LogoFrame";
 import Reveal from "@/components/ui/Reveal";
 import { Eye, PencilLine } from "lucide-react";
 import { getSessionFromCookies } from "@/lib/auth";
-import { formatDiasValidosSentence } from "@/lib/beneficioSchedule";
 import { formatDateAR } from "@/lib/dates";
 import { UserType } from "@/lib/enums";
 import { getLocalLogoDisplayUrl } from "@/lib/localLogoSource";
@@ -189,10 +189,8 @@ export default async function DashboardPage({
                             ? `${canjeados}/${b.maxUsos}`
                             : `${canjeados}/∞`}
                         </p>
-                         <p className="text-[13px] font-medium text-text-muted sm:col-span-2 sm:text-sm lg:text-[13px] 2xl:text-sm">
-                          {formatDiasValidosSentence(b.diasValidos)}
-                        </p>
-                      </div>
+                          <BenefitWeekdays diasValidos={b.diasValidos} size="md" className="sm:col-span-2" />
+                       </div>
 
                        <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:mt-3 sm:gap-2 lg:mt-2.5 2xl:mt-3">
                         <Badge variant="muted">

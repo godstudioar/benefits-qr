@@ -2,6 +2,7 @@ import { Download, PencilLine } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getSessionFromCookies } from "@/lib/auth";
 import { UserType } from "@/lib/enums";
+import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import DeleteBeneficioButton from "@/components/local/dashboard/beneficios/DeleteBeneficioButton";
@@ -9,7 +10,6 @@ import BeneficioDetailAutoRefresh from "@/components/local/dashboard/beneficios/
 import LinkButton from "@/components/ui/LinkButton";
 import SectionHeader from "@/components/ui/SectionHeader";
 import MetricCard from "@/components/ui/MetricCard";
-import { formatDiasValidosSentence } from "@/lib/beneficioSchedule";
 import { formatDateAR, formatDateTimeAR } from "@/lib/dates";
 import { buildOrderNumberFromReclamoId } from "@/lib/orderNumber";
 import {
@@ -84,9 +84,7 @@ export default async function BeneficioStatsPage({
                   Vence: {formatDateAR(beneficio.fechaExpiracion)}
                   {beneficio.maxUsos && ` · Máx. ${beneficio.maxUsos} usos`}
                 </p>
-                <p className="text-xs font-medium text-text-muted sm:text-sm lg:text-[13px] 2xl:text-sm">
-                  {formatDiasValidosSentence(beneficio.diasValidos)}
-                </p>
+                <BenefitWeekdays diasValidos={beneficio.diasValidos} size="md" />
               </div>
 
               {!isDeleted ? (
