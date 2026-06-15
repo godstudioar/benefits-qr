@@ -275,7 +275,6 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
       {/* Desktop: card container — same visual DNA as PublicBenefitCard */}
       <div className="hidden sm:block">
         <div className={`overflow-hidden rounded-2xl border border-surface/80 bg-surface/95 ${SHADOW.cardBase} sm:bg-surface/85 sm:backdrop-blur-md`}>
-          <div className="h-1 bg-gradient-to-r from-primary to-accent" />
           <div className="px-4 py-3">
             {controls}
             {locationFeedback}

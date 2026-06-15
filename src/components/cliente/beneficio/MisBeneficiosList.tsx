@@ -58,7 +58,6 @@ export default function MisBeneficiosList({
             key={r.id}
             className={`overflow-hidden border-surface/80 bg-surface/95 ${SHADOW.accentBase} ${INTERACTION.hoverLift} ${SHADOW.accentHover} sm:bg-surface/85`}
           >
-            <div className="h-1 bg-gradient-to-r from-primary to-accent" />
             <div className="p-4 sm:p-5 lg:p-4 2xl:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1 space-y-3">

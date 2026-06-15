@@ -20,7 +20,6 @@ export default function MisBeneficiosLoading() {
             key={i}
             className={`overflow-hidden border-surface/80 bg-surface/95 ${SHADOW.accentBase}`}
           >
-            <div className="h-1 bg-gradient-to-r from-primary to-accent opacity-30" />
              <div className="p-4 sm:p-5 lg:p-4 2xl:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 space-y-3">

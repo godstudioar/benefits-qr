@@ -131,8 +131,6 @@ export default async function BeneficioPublicoPage({
 
         <Reveal delay={0.06} y={16} amount={0.35}>
           <Card className={`overflow-hidden border-surface/80 bg-surface/90 ${SHADOW.focalBase} sm:bg-surface/80 sm:backdrop-blur-md`}>
-            <div className="h-1.5 bg-gradient-to-r from-primary to-accent" />
-
             <div className="space-y-5 p-6 sm:p-8 lg:space-y-4 lg:p-6 2xl:space-y-5 2xl:p-8">
               <div className="space-y-3 lg:space-y-2.5 2xl:space-y-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
