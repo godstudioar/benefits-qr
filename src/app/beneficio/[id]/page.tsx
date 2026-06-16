@@ -5,6 +5,7 @@ import { EstadoReclamo } from "@/generated/prisma/client";
 export const revalidate = 60;
 import Badge from "@/components/ui/Badge";
 import BrandLogo from "@/components/ui/BrandLogo";
+import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
 import Card from "@/components/ui/Card";
 import LogoFrame from "@/components/ui/LogoFrame";
 import ReclamarForm from "@/components/cliente/beneficio/ReclamarForm";
@@ -12,13 +13,11 @@ import LinkButton from "@/components/ui/LinkButton";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { formatDateAR } from "@/lib/dates";
-import {
-  formatDiasValidosSentence,
-  sortDiasValidos,
-} from "@/lib/beneficioSchedule";
+import { sortDiasValidos } from "@/lib/beneficioSchedule";
 import { evaluateBeneficioState } from "@/lib/couponStatus";
 import { DIRECT_QR_FLOW } from "@/lib/flows";
 import { getBeneficioAvailabilityPresentation } from "@/lib/statusPresentation";
+import { SHADOW } from "@/lib/shadowStyles";
 import { getClienteSessionFromCookies } from "@/lib/auth";
 
 export default async function BeneficioPublicoPage({
@@ -79,7 +78,6 @@ export default async function BeneficioPublicoPage({
     canjeados: beneficio.reclamos.length,
     diasValidos,
   });
-  const tieneRestriccion = diasValidos.length > 0;
   const diasValidosOrdenados = sortDiasValidos(diasValidos);
   const localName = beneficio.local.nombre ?? "Local adherido";
   const mapsUrl = beneficio.local.direccion
@@ -111,6 +109,17 @@ export default async function BeneficioPublicoPage({
         Beneficios
       </LinkButton>
 
+      {clienteSession ? (
+        <LinkButton
+          href="/mis-beneficios"
+          variant="subtle"
+          size="sm"
+          className="absolute top-5 right-5 z-40 sm:top-6 sm:right-6"
+        >
+          Mis cupones
+        </LinkButton>
+      ) : null}
+
       <div className="my-auto w-full max-w-md lg:max-w-sm 2xl:max-w-md">
         <Reveal y={14} amount={0.3}>
           <div className="mb-7 text-center lg:mb-6 2xl:mb-7">
@@ -132,9 +141,7 @@ export default async function BeneficioPublicoPage({
         </Reveal>
 
         <Reveal delay={0.06} y={16} amount={0.35}>
-          <Card className="overflow-hidden border-surface/80 bg-surface/90 shadow-xl shadow-primary-soft/60 sm:bg-surface/80 sm:backdrop-blur-md">
-            <div className="h-1.5 bg-gradient-to-r from-primary to-accent" />
-
+          <Card className={`overflow-hidden border-surface/80 bg-surface/90 ${SHADOW.focalBase} sm:bg-surface/80 sm:backdrop-blur-md`}>
             <div className="space-y-5 p-6 sm:p-8 lg:space-y-4 lg:p-6 2xl:space-y-5 2xl:p-8">
               <div className="space-y-3 lg:space-y-2.5 2xl:space-y-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -207,14 +214,7 @@ export default async function BeneficioPublicoPage({
                       {beneficio.reclamos.length}/{beneficio.maxUsos} usos
                     </Badge>
                   ) : null}
-                  {tieneRestriccion ? (
-                    <Badge variant="muted" className="px-3 py-1">
-                      {formatDiasValidosSentence(diasValidosOrdenados, {
-                        emptyLabel: "",
-                        prefix: "Válido los",
-                      })}
-                    </Badge>
-                  ) : null}
+                  <BenefitWeekdays diasValidos={diasValidosOrdenados} />
                 </div>
               </div>
 

@@ -2,6 +2,7 @@ import { evaluateBeneficioState, type BeneficioEffectiveStatus } from "@/lib/cou
 import { parseRawDbTimestamp } from "@/lib/dates";
 import { getBeneficioAvailabilityPresentation } from "@/lib/statusPresentation";
 import {
+  getFilteredLocalesForPublicBenefitsRaw,
   getFeaturedPublicBenefitsRaw,
   getPublicBenefitsCatalogRaw,
   type PublicBenefitsCatalogRaw,
@@ -25,6 +26,8 @@ export type PublicBenefitCardData = {
     logoUrl: string | null;
     rubroNombre: string | null;
     direccion: string | null;
+    lat: number | null;
+    lng: number | null;
   };
 };
 
@@ -72,4 +75,8 @@ export async function getFeaturedPublicBenefits(limit: number) {
   return {
     beneficios,
   };
+}
+
+export async function getFilteredPublicBenefitsLocales(filters: PublicBenefitsFiltersInput = {}) {
+  return getFilteredLocalesForPublicBenefitsRaw(filters);
 }

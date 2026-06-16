@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, Filter, LocateFixed, MapPin, Search, X } from "lucide-react";
+import { ChevronDown, Filter, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SHADOW } from "@/lib/shadowStyles";
-import { usePublicBenefitsLocation } from "@/components/public-benefits/PublicBenefitsLocationContext";
+import { ReclamoEffectiveStatus } from "@/lib/couponStatus";
 import {
   Select,
   SelectContent,
@@ -13,22 +13,27 @@ import {
   SelectTrigger,
 } from "@/components/ui/Select";
 
+const STATUS_ALL = "__all__";
 const RUBRO_ALL = "__all__";
 
 type Rubro = { id: number | string; nombre: string };
 
-export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
+const STATUS_OPTIONS = [
+  { value: ReclamoEffectiveStatus.PENDIENTE, label: "Pendiente" },
+  { value: ReclamoEffectiveStatus.CANJEADO, label: "Canjeado" },
+  { value: ReclamoEffectiveStatus.VENCIDO, label: "Vencido" },
+  { value: ReclamoEffectiveStatus.CANCELADO, label: "Cancelado" },
+] as const;
+
+export default function MisBeneficiosFilters({ rubros }: { rubros: Rubro[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const location = usePublicBenefitsLocation();
 
   const currentQ = searchParams.get("q") ?? "";
-  const currentRubro = searchParams.get("rubro") ?? "";
+  const currentStatus = searchParams.get("status") ?? "";
   const currentSoloHoy = searchParams.get("soloHoy") === "1";
-  const currentSoloDisponibles = searchParams.get("soloDisponibles") === "1";
-  const currentLocal = searchParams.get("local") ?? "";
-  const isNearbyActive = location.status === "granted" && location.coords !== null;
-  const isNearbyLoading = location.status === "prompting";
+  const currentRubro = searchParams.get("rubro") ?? "";
+
   const [isOpen, setIsOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(currentQ);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -48,9 +53,15 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
     };
   }, []);
 
-  // Derive Select value and label entirely from the URL — single source of truth.
-  // Local state (rubroValue) caused desync: the Suspense remount on RSC navigation
-  // would reinitialize useState before searchParams updated, losing the selection.
+  const selectStatusValue =
+    currentStatus && STATUS_OPTIONS.some((s) => s.value === currentStatus)
+      ? currentStatus
+      : STATUS_ALL;
+
+  const selectedStatusLabel = STATUS_OPTIONS.find(
+    (s) => s.value === currentStatus
+  )?.label;
+
   const selectRubroValue = currentRubro || RUBRO_ALL;
   const selectedRubroLabel = !currentRubro
     ? null
@@ -58,14 +69,15 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
 
   const activeCount =
     (currentQ ? 1 : 0) +
-    (currentRubro ? 1 : 0) +
+    (currentStatus ? 1 : 0) +
     (currentSoloHoy ? 1 : 0) +
-    (currentSoloDisponibles ? 1 : 0) +
-    (currentLocal ? 1 : 0) +
-    (isNearbyActive ? 1 : 0);
+    (currentRubro ? 1 : 0);
 
   const buildUrl = useCallback(
-    (overrides: Record<string, string | undefined>, baseSearchParams = latestSearchParamsRef.current) => {
+    (
+      overrides: Record<string, string | undefined>,
+      baseSearchParams = latestSearchParamsRef.current
+    ) => {
       const params = new URLSearchParams(baseSearchParams);
 
       for (const [key, value] of Object.entries(overrides)) {
@@ -77,7 +89,7 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
       }
 
       const qs = params.toString();
-      return qs ? `/beneficios?${qs}` : "/beneficios";
+      return qs ? `/mis-beneficios?${qs}` : "/mis-beneficios";
     },
     []
   );
@@ -87,49 +99,52 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
       router.push(
-        buildUrl({ q: value || undefined, page: undefined }, latestSearchParamsRef.current)
+        buildUrl(
+          { q: value || undefined, page: undefined },
+          latestSearchParamsRef.current
+        )
       );
     }, 300);
   }
 
-  function handleRubroChange(value: string) {
-    router.push(buildUrl({ rubro: value === RUBRO_ALL ? undefined : value, page: undefined }));
-  }
-
-  function handleToggleSoloHoy() {
-    router.push(buildUrl({ soloHoy: currentSoloHoy ? undefined : "1", page: undefined }));
-  }
-
-  function handleToggleSoloDisponibles() {
-    router.push(
-      buildUrl({ soloDisponibles: currentSoloDisponibles ? undefined : "1", page: undefined })
-    );
-  }
-
-  function handleClear() {
-    if (isNearbyActive) {
-      location.clear();
-    }
-
+  function handleStatusChange(value: string) {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     router.push(
       buildUrl({
-        q: undefined,
-        rubro: undefined,
-        soloHoy: undefined,
-        soloDisponibles: undefined,
-        local: undefined,
+        status: value === STATUS_ALL ? undefined : value,
         page: undefined,
       })
     );
   }
 
-  function handleNearbyToggle() {
-    if (isNearbyActive) {
-      location.clear();
-      return;
-    }
+  function handleRubroChange(value: string) {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    router.push(
+      buildUrl({
+        rubro: value === RUBRO_ALL ? undefined : value,
+        page: undefined,
+      })
+    );
+  }
 
-    location.request();
+  function handleToggleSoloHoy() {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    router.push(
+      buildUrl({ soloHoy: currentSoloHoy ? undefined : "1", page: undefined })
+    );
+  }
+
+  function handleClear() {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    router.push(
+      buildUrl({
+        q: undefined,
+        status: undefined,
+        soloHoy: undefined,
+        rubro: undefined,
+        page: undefined,
+      })
+    );
   }
 
   const toggle = (active: boolean) =>
@@ -141,28 +156,54 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
     );
 
   const controls = (
-    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-      {/* Búsqueda por nombre */}
-      <div className="relative w-full sm:min-w-[190px] sm:flex-[2]">
-        <label htmlFor="public-search" className="sr-only">
-          Buscar local
+    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="relative col-span-2 w-full sm:min-w-[190px] sm:flex-[2]">
+        <label htmlFor="mis-beneficios-search" className="sr-only">
+          Buscar beneficio
         </label>
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
         <input
-          id="public-search"
+          id="mis-beneficios-search"
           type="text"
-          placeholder="Buscar local..."
+          placeholder="Buscar beneficio o local..."
           value={searchValue}
           onChange={(e) => handleQChange(e.target.value)}
           className="h-10 w-full rounded-xl border border-border-default bg-surface py-2 pl-9 pr-3 text-sm text-text-primary shadow-sm outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-text-muted focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary-soft"
         />
       </div>
 
-      {/* Rubro — label computed from props, not from Radix item-text */}
-      <div className="w-full sm:min-w-[165px] sm:flex-1">
+      <div className="min-w-0 sm:min-w-[150px] sm:flex-1">
+        <Select value={selectStatusValue} onValueChange={handleStatusChange}>
+          <SelectTrigger>
+            <span
+              className={cn(
+                "truncate text-sm",
+                !selectedStatusLabel && "font-normal text-text-muted"
+              )}
+            >
+              {selectedStatusLabel ?? "Todos los estados"}
+            </span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={STATUS_ALL}>Todos los estados</SelectItem>
+            {STATUS_OPTIONS.map((s) => (
+              <SelectItem key={s.value} value={s.value}>
+                {s.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="min-w-0 sm:min-w-[150px] sm:flex-1">
         <Select value={selectRubroValue} onValueChange={handleRubroChange}>
           <SelectTrigger>
-            <span className={cn("truncate text-sm", !selectedRubroLabel && "text-text-muted font-normal")}>
+            <span
+              className={cn(
+                "truncate text-sm",
+                !selectedRubroLabel && "font-normal text-text-muted"
+              )}
+            >
               {selectedRubroLabel ?? "Todos los rubros"}
             </span>
           </SelectTrigger>
@@ -177,61 +218,21 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
         </Select>
       </div>
 
-      {/* Separador visual solo desktop */}
       <div className="hidden h-5 w-px shrink-0 bg-border-default sm:block" />
 
-      <div className="flex w-full gap-2 sm:contents">
-        <button type="button" onClick={handleToggleSoloHoy} className={cn(toggle(currentSoloHoy), "flex-1 sm:flex-none")}>
-          Disponible hoy
-        </button>
-
-        <button
-          type="button"
-          onClick={handleToggleSoloDisponibles}
-          className={cn(toggle(currentSoloDisponibles), "flex-1 sm:flex-none")}
-        >
-          Solo activos
-        </button>
-
-        <button
-          type="button"
-          onClick={handleNearbyToggle}
-          disabled={isNearbyLoading}
-          aria-pressed={isNearbyActive}
-          aria-busy={isNearbyLoading || undefined}
-          className={cn(toggle(isNearbyActive), "flex-1 sm:flex-none")}
-        >
-          {isNearbyActive ? (
-            <>
-              <MapPin className="mr-1 h-4 w-4 sm:mr-1.5" aria-hidden="true" />
-              Cerca mío
-              <X className="ml-1 h-3.5 w-3.5 sm:ml-1.5" aria-hidden="true" />
-            </>
-          ) : (
-            <>
-              <LocateFixed className="mr-1 h-4 w-4 sm:mr-1.5" aria-hidden="true" />
-              {isNearbyLoading ? "Buscando..." : "Ver cerca mío"}
-            </>
-          )}
-        </button>
-      </div>
-
-      {currentLocal && (
-        <button
-          type="button"
-          onClick={() => router.push(buildUrl({ local: undefined, page: undefined }))}
-          className="flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary-soft/10 px-3 text-sm font-medium text-primary transition-colors hover:border-danger hover:bg-danger/10 hover:text-danger"
-        >
-          <span>Local seleccionado</span>
-          <X className="h-3.5 w-3.5" />
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={handleToggleSoloHoy}
+        className={cn(toggle(currentSoloHoy), "col-span-2 w-full sm:w-auto")}
+      >
+        Disponible hoy
+      </button>
 
       {activeCount > 0 && (
         <button
           type="button"
           onClick={handleClear}
-          className="flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-2 text-sm font-medium text-text-muted transition-colors hover:text-danger"
+          className="col-span-2 flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-2 text-sm font-medium text-text-muted transition-colors hover:text-danger sm:col-auto"
         >
           <X className="h-3.5 w-3.5" />
           Limpiar
@@ -240,14 +241,8 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
     </div>
   );
 
-  const locationFeedback =
-    location.error && location.status !== "granted" ? (
-      <p className="mt-2 text-[11px] text-warning">{location.error}</p>
-    ) : null;
-
   return (
-    <div className="mb-6">
-      {/* Mobile: collapsible */}
+    <div className="mb-5 sm:mb-6 lg:mb-5 2xl:mb-6">
       <div className="sm:hidden">
         <button
           type="button"
@@ -271,18 +266,15 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
         {isOpen && (
           <div className="mt-2 rounded-xl border border-border-default bg-surface p-3 shadow-sm">
             {controls}
-            {locationFeedback}
           </div>
         )}
       </div>
 
-      {/* Desktop: card container — same visual DNA as PublicBenefitCard */}
       <div className="hidden sm:block">
-        <div className={`overflow-hidden rounded-2xl border border-surface/80 bg-surface/95 ${SHADOW.cardBase} sm:bg-surface/85 sm:backdrop-blur-md`}>
-          <div className="px-4 py-3">
-            {controls}
-            {locationFeedback}
-          </div>
+        <div
+          className={`overflow-hidden rounded-2xl border border-surface/80 bg-surface/95 ${SHADOW.cardBase} sm:bg-surface/85 sm:backdrop-blur-md`}
+        >
+          <div className="px-4 py-3">{controls}</div>
         </div>
       </div>
     </div>

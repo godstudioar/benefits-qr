@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useMemo, useState } from "react";
 import { LayoutGrid, MapIcon } from "lucide-react";
 import LinkButton from "@/components/ui/LinkButton";
 import MapsProvider from "@/components/maps/MapsProvider";
@@ -34,14 +34,7 @@ export default function BeneficiosViewToggle({
 }) {
   const [view, setView] = useState<View>("lista");
   const location = useUserLocation();
-
-  // Si venimos con un filtro de local activo (por ejemplo, "Ver beneficios" desde el mapa),
-  // forzamos la vista de lista al montar o cuando cambia el filtro.
-  useEffect(() => {
-    if (hasLocalFilter) {
-      setView("lista");
-    }
-  }, [hasLocalFilter, filterParamsString]);
+  const effectiveView = hasLocalFilter ? "lista" : view;
 
   const localCoordsByName: LocalCoordsByName = useMemo(() => {
     const map: LocalCoordsByName = {};
@@ -73,10 +66,10 @@ export default function BeneficiosViewToggle({
           <button
             type="button"
             role="tab"
-            aria-selected={view === "lista"}
+            aria-selected={effectiveView === "lista"}
             onClick={() => setView("lista")}
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-              view === "lista"
+              effectiveView === "lista"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-text-muted hover:text-text-primary"
             }`}
@@ -87,10 +80,10 @@ export default function BeneficiosViewToggle({
           <button
             type="button"
             role="tab"
-            aria-selected={view === "mapa"}
+            aria-selected={effectiveView === "mapa"}
             onClick={() => setView("mapa")}
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-              view === "mapa"
+              effectiveView === "mapa"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-text-muted hover:text-text-primary"
             }`}
@@ -101,7 +94,7 @@ export default function BeneficiosViewToggle({
         </div>
       </div>
 
-      {view === "lista" ? (
+      {effectiveView === "lista" ? (
         <>
           <BeneficiosClientList
             benefits={benefits}

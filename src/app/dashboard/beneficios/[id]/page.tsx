@@ -2,6 +2,7 @@ import { Download, PencilLine } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getSessionFromCookies } from "@/lib/auth";
 import { UserType } from "@/lib/enums";
+import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import DeleteBeneficioButton from "@/components/local/dashboard/beneficios/DeleteBeneficioButton";
@@ -9,7 +10,6 @@ import BeneficioDetailAutoRefresh from "@/components/local/dashboard/beneficios/
 import LinkButton from "@/components/ui/LinkButton";
 import SectionHeader from "@/components/ui/SectionHeader";
 import MetricCard from "@/components/ui/MetricCard";
-import { formatDiasValidosSentence } from "@/lib/beneficioSchedule";
 import { formatDateAR, formatDateTimeAR } from "@/lib/dates";
 import { buildOrderNumberFromReclamoId } from "@/lib/orderNumber";
 import {
@@ -17,6 +17,7 @@ import {
   getReclamoStatusPresentation,
 } from "@/lib/statusPresentation";
 import { getBeneficioDetailPageData } from "@/server/services/beneficioDetailService";
+import { SHADOW } from "@/lib/shadowStyles";
 const PAGE_SIZE = 10;
 
 export default async function BeneficioStatsPage({
@@ -62,7 +63,7 @@ export default async function BeneficioStatsPage({
         className="mb-5 sm:mb-6 lg:mb-5 2xl:mb-6"
       />
 
-      <Card className="relative mb-6 border-surface/80 bg-surface/95 p-4 shadow-sm shadow-accent-soft/25 sm:bg-surface/85 sm:p-6 lg:p-5 2xl:p-6">
+      <Card className={`relative mb-6 border-surface/80 bg-surface/95 p-4 ${SHADOW.accentBase} sm:bg-surface/85 sm:p-6 lg:p-5 2xl:p-6`}>
         <div className="flex flex-col gap-5 lg:gap-4 2xl:gap-5">
           <div className="flex flex-col gap-4 pr-14 sm:pr-0 lg:gap-3 2xl:gap-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
@@ -84,9 +85,7 @@ export default async function BeneficioStatsPage({
                   Vence: {formatDateAR(beneficio.fechaExpiracion)}
                   {beneficio.maxUsos && ` · Máx. ${beneficio.maxUsos} usos`}
                 </p>
-                <p className="text-xs font-medium text-text-muted sm:text-sm lg:text-[13px] 2xl:text-sm">
-                  {formatDiasValidosSentence(beneficio.diasValidos)}
-                </p>
+                <BenefitWeekdays diasValidos={beneficio.diasValidos} size="md" />
               </div>
 
               {!isDeleted ? (
@@ -125,12 +124,13 @@ export default async function BeneficioStatsPage({
               Actividad del cupón
             </p>
             <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-2.5 2xl:gap-3">
-              <MetricCard label="Reclamos" value={stats.total} variant="secondary" />
-              <MetricCard label="Canjeados" value={stats.canjeados} variant="light" />
+              <MetricCard label="Reclamos" value={stats.total} variant="secondary" elevated />
+              <MetricCard label="Canjeados" value={stats.canjeados} variant="light" elevated />
               <MetricCard
                 label="Usos disponibles"
                 value={stats.usosDisponibles ?? "∞"}
                 variant="warning"
+                elevated
               />
             </div>
           </div>
@@ -154,7 +154,7 @@ export default async function BeneficioStatsPage({
       </div>
 
       {stats.total === 0 ? (
-        <Card className="p-8 text-center">
+        <Card className={`p-8 text-center ${SHADOW.cardBase}`}>
           <p className="text-text-muted">Nadie reclamó este cupón aún</p>
         </Card>
       ) : (
@@ -165,7 +165,7 @@ export default async function BeneficioStatsPage({
             return (
               <Card
                 key={r.id}
-                className="border-surface/80 bg-surface/95 p-3 sm:bg-surface/85 sm:p-3.5 lg:p-3 2xl:p-3.5"
+                className={`border-surface/80 bg-surface/95 p-3 ${SHADOW.cardBase} sm:bg-surface/85 sm:p-3.5 lg:p-3 2xl:p-3.5`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">

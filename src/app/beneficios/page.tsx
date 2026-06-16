@@ -6,6 +6,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import PublicBenefitsFilters from "@/components/public-benefits/PublicBenefitsFilters";
 import BeneficiosSection from "@/components/public-benefits/BeneficiosSection";
 import { BenefitsGridSkeleton } from "@/components/public-benefits/BenefitsGrid";
+import { PublicBenefitsLocationProvider } from "@/components/public-benefits/PublicBenefitsLocationContext";
 import { prisma } from "@/lib/prisma";
 
 const getRubros = unstable_cache(
@@ -26,9 +27,11 @@ export default async function BeneficiosPage({
     soloHoy?: string;
     soloDisponibles?: string;
     local?: string;
+    vista?: string;
   }>;
 }) {
-  const { page: pageParam, q, rubro, soloHoy, soloDisponibles, local } = await searchParams;
+  const { page: pageParam, q, rubro, soloHoy, soloDisponibles, local, vista: vistaParam } =
+    await searchParams;
 
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const filters = {
@@ -38,6 +41,7 @@ export default async function BeneficiosPage({
     soloDisponibles: soloDisponibles === "1",
     localId: local || undefined,
   };
+  const vista = vistaParam === "mapa" ? "mapa" : "cupones";
 
   const filterParams = new URLSearchParams();
   if (filters.q) filterParams.set("q", filters.q);
@@ -45,6 +49,10 @@ export default async function BeneficiosPage({
   if (filters.soloHoy) filterParams.set("soloHoy", "1");
   if (filters.soloDisponibles) filterParams.set("soloDisponibles", "1");
   if (filters.localId) filterParams.set("local", filters.localId);
+  if (vista !== "cupones") filterParams.set("vista", vista);
+
+  const navigationParams = new URLSearchParams(filterParams);
+  if (pageParam) navigationParams.set("page", String(page));
 
   const rubros = await getRubros();
 
@@ -69,17 +77,21 @@ export default async function BeneficiosPage({
           className="mb-6 max-w-2xl"
         />
 
-        <Suspense fallback={null}>
-          <PublicBenefitsFilters rubros={rubros} />
-        </Suspense>
+        <PublicBenefitsLocationProvider>
+          <Suspense fallback={null}>
+            <PublicBenefitsFilters rubros={rubros} />
+          </Suspense>
 
-        <Suspense fallback={<BenefitsGridSkeleton />}>
-          <BeneficiosSection
-            page={page}
-            filters={filters}
-            filterParamsString={filterParams.toString()}
-          />
-        </Suspense>
+          <Suspense fallback={<BenefitsGridSkeleton />}>
+            <BeneficiosSection
+              page={page}
+              filters={filters}
+              filterParams={filterParams}
+              navigationParamsString={navigationParams.toString()}
+              vista={vista}
+            />
+          </Suspense>
+        </PublicBenefitsLocationProvider>
       </div>
     </main>
   );

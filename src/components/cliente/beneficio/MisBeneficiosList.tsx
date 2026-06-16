@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { QrCode, CircleAlert, Clock } from "lucide-react";
+import { QrCode, CircleAlert } from "lucide-react";
+import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import QRDisplay from "@/components/cliente/beneficio/QRDisplay";
@@ -11,8 +12,9 @@ import {
   type ReclamoEffectiveStatus as ReclamoEffectiveStatusType,
 } from "@/lib/couponStatus";
 import { formatDateAR, formatDateTimeAR } from "@/lib/dates";
-import { formatDiasValidosSentence } from "@/lib/beneficioSchedule";
+import { INTERACTION, SHADOW } from "@/lib/shadowStyles";
 import { getReclamoStatusPresentation } from "@/lib/statusPresentation";
+
 
 type Reclamo = {
   id: string;
@@ -31,15 +33,21 @@ type Reclamo = {
 
 export default function MisBeneficiosList({
   reclamos,
+  hasFilters = false,
 }: {
   reclamos: Reclamo[];
+  hasFilters?: boolean;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (reclamos.length === 0) {
     return (
-      <Card className="border-surface/80 bg-surface/95 p-10 text-center shadow-sm shadow-accent-soft/25 sm:bg-surface/85 sm:p-12 lg:p-9 2xl:p-12">
-        <p className="text-text-muted">No tenés cupones reclamados aún</p>
+      <Card className={`border-surface/80 bg-surface/95 p-10 text-center ${SHADOW.accentBase} sm:bg-surface/85 sm:p-12 lg:p-9 2xl:p-12`}>
+        <p className="text-text-muted">
+          {hasFilters
+            ? "No se encontraron cupones con los filtros aplicados"
+            : "No tenés cupones reclamados aún"}
+        </p>
       </Card>
     );
   }
@@ -54,9 +62,8 @@ export default function MisBeneficiosList({
         return (
           <Card
             key={r.id}
-            className="overflow-hidden border-surface/80 bg-surface/95 shadow-sm shadow-accent-soft/25 sm:bg-surface/85"
+            className={`overflow-hidden border-surface/80 bg-surface/95 ${SHADOW.accentBase} ${INTERACTION.hoverLift} ${SHADOW.accentHover} sm:bg-surface/85`}
           >
-            <div className="h-1 bg-gradient-to-r from-primary to-accent" />
             <div className="p-4 sm:p-5 lg:p-4 2xl:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1 space-y-3">
@@ -96,14 +103,10 @@ export default function MisBeneficiosList({
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted lg:text-[11px] 2xl:text-xs">
                       <span>Vence: {formatDateAR(r.beneficio.fechaExpiracion)}</span>
                     </div>
-                    {r.beneficio.diasValidos?.length > 0 && (
-                      <div className="flex items-center gap-1 text-xs text-text-muted/80 lg:text-[11px] 2xl:text-xs">
-                        <Clock className="h-3 w-3" aria-hidden="true" />
-                        <span className="line-clamp-1">
-                          {formatDiasValidosSentence(r.beneficio.diasValidos, { style: "short" })}
-                        </span>
-                      </div>
-                    )}
+                    <BenefitWeekdays
+                      diasValidos={r.beneficio.diasValidos}
+                      className="text-text-muted/80 lg:text-[11px] 2xl:text-xs"
+                    />
                   </div>
                 </div>
                 <Badge variant={status.badgeVariant}>{status.label}</Badge>

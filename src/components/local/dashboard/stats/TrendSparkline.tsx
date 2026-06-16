@@ -127,7 +127,7 @@ export default function TrendSparkline({ data, dataKey, color, label }: TrendSpa
         )}
       </svg>
       {hoveredPoint && (
-        <div className="pointer-events-none absolute top-12 left-1/2 z-10 -translate-x-1/2 rounded-lg border border-border-default/70 bg-surface px-2 py-1 shadow-md shadow-primary-soft/30 sm:top-14 lg:top-12 2xl:top-14">
+        <div className="pointer-events-none absolute top-12 left-1/2 z-10 -translate-x-1/2 rounded-lg border border-border-default/70 bg-surface px-2 py-1 shadow-md shadow-primary/16 sm:top-14 lg:top-12 2xl:top-14">
           <p className="text-[10px] font-semibold text-text-primary sm:text-[11px]">
             {formatDayLabel(hoveredPoint.date)}
           </p>

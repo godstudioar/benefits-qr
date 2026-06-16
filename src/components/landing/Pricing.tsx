@@ -2,6 +2,7 @@ import Badge from "@/components/ui/Badge";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeader from "@/components/ui/SectionHeader";
 import LinkButton from "@/components/ui/LinkButton";
+import { SHADOW } from "@/lib/shadowStyles";
 import { ArrowRight, Check } from "lucide-react";
 
 const FEATURES = [
@@ -28,7 +29,7 @@ export default function Pricing() {
 
         {/* Pricing card */}
         <Reveal delay={0.06} y={20} amount={0.25}>
-          <div className="bg-surface overflow-hidden rounded-3xl border border-border-default/70 shadow-sm">
+          <div className={`bg-surface overflow-hidden rounded-3xl border border-border-default/70 ${SHADOW.heroBase} transition-[box-shadow] duration-200 ${SHADOW.heroHover}`}>
             {/* Top banner */}
               <div className="bg-primary flex flex-col gap-3 px-8 py-5 lg:flex-row lg:items-center lg:justify-between lg:px-7 lg:py-4 2xl:px-8 2xl:py-5">
                 <div>

@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import Card from "@/components/ui/Card";
 import PublicBenefitCard from "@/components/public-benefits/PublicBenefitCard";
 import type { PublicBenefitCardData } from "@/server/services/publicBenefitsService";
+import { SHADOW } from "@/lib/shadowStyles";
 import { formatDistance, haversineKm, type LatLng } from "@/lib/geo/distance";
 
 export type LocalCoordsByName = Record<string, LatLng>;
@@ -32,7 +33,7 @@ export default function BeneficiosClientList({
 
   if (ordered.length === 0) {
     return (
-      <Card className="border-surface/80 bg-surface/95 p-10 text-center shadow-sm shadow-primary-soft/25 sm:bg-surface/85 sm:p-12 sm:backdrop-blur-md">
+      <Card className={`border-surface/80 bg-surface/95 p-10 text-center ${SHADOW.cardBase} sm:bg-surface/85 sm:p-12 sm:backdrop-blur-md`}>
         <p className="text-sm text-text-muted">
           {emptyMessage ?? "No hay beneficios publicados todavía."}
         </p>

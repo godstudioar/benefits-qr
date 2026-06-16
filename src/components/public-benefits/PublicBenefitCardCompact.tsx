@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Ticket, MapPinned, Clock, MapPin } from "lucide-react";
+import { ArrowRight, CalendarDays, Ticket, MapPinned, MapPin } from "lucide-react";
 import Badge from "@/components/ui/Badge";
+import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
 import Card from "@/components/ui/Card";
 import LogoFrame from "@/components/ui/LogoFrame";
 import { formatDateAR } from "@/lib/dates";
-import { formatDiasValidosSentence } from "@/lib/beneficioSchedule";
+import { INTERACTION, SHADOW } from "@/lib/shadowStyles";
 import type { PublicBenefitCardData } from "@/server/services/publicBenefitsService";
+
 
 export default function PublicBenefitCardCompact({
   benefit,
@@ -22,7 +24,7 @@ export default function PublicBenefitCardCompact({
       aria-label={`Ver beneficio ${benefit.descripcion}`}
       className="group block"
     >
-      <Card className="overflow-hidden border-surface/80 bg-surface/95 shadow-sm shadow-primary-soft/25 transition-[transform,box-shadow,border-color] duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/25 group-hover:shadow-md sm:bg-surface/85 sm:backdrop-blur-md">
+      <Card className={`overflow-hidden border-surface/80 bg-surface/95 ${SHADOW.cardBase} ${INTERACTION.groupHoverLift} ${SHADOW.cardGroupHover} sm:bg-surface/85 sm:backdrop-blur-md`}>
         <div className="flex items-center gap-3 p-3">
           <LogoFrame
             src={benefit.local.logoUrl}
@@ -68,14 +70,7 @@ export default function PublicBenefitCardCompact({
                 </p>
               ) : null}
             </div>
-            {benefit.diasValidos?.length > 0 && (
-              <p className="flex items-center gap-1 text-[11px] text-text-muted/80">
-                <Clock className="h-3 w-3" aria-hidden="true" />
-                <span className="line-clamp-1 max-w-[220px]">
-                  {formatDiasValidosSentence(benefit.diasValidos, { style: "short" })}
-                </span>
-              </p>
-            )}
+            <BenefitWeekdays diasValidos={benefit.diasValidos} className="text-text-muted/80" />
           </div>
 
           <ArrowRight

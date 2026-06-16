@@ -1,30 +1,56 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import MisBeneficiosFilters from "@/components/cliente/beneficio/MisBeneficiosFilters";
 import MisBeneficiosList from "@/components/cliente/beneficio/MisBeneficiosList";
 import WelcomeModal from "@/components/cliente/beneficio/WelcomeModal";
 import LinkButton from "@/components/ui/LinkButton";
 import MetricCard from "@/components/ui/MetricCard";
 import Card from "@/components/ui/Card";
 import SectionHeader from "@/components/ui/SectionHeader";
-import { getMisBeneficiosPageData } from "@/server/services/misBeneficiosService";
+import { SHADOW } from "@/lib/shadowStyles";
+import {
+  getMisBeneficiosPageData,
+  getMisBeneficiosRubros,
+  type MisBeneficiosFilters as MisBeneficiosFiltersType,
+} from "@/server/services/misBeneficiosService";
 import { getClienteSessionFromCookies } from "@/lib/auth";
 import { UserType } from "@/lib/enums";
+import { ReclamoEffectiveStatus } from "@/lib/couponStatus";
 
 const PAGE_SIZE = 10;
+
+function isValidReclamoStatus(
+  value: string | undefined
+): value is ReclamoEffectiveStatus {
+  return (
+    value !== undefined &&
+    Object.values(ReclamoEffectiveStatus).includes(value as ReclamoEffectiveStatus)
+  );
+}
+
+function buildPageHref(pageNum: number, filterParams: URLSearchParams) {
+  const params = new URLSearchParams(filterParams);
+  if (pageNum > 1) {
+    params.set("page", String(pageNum));
+  } else {
+    params.delete("page");
+  }
+  const qs = params.toString();
+  return qs ? `/mis-beneficios?${qs}` : "/mis-beneficios";
+}
 
 function ReclamosListSkeleton() {
   return (
     <>
       <div className="mb-5 sm:mb-6 lg:mb-5 2xl:mb-6">
-        <Card className="rounded-xl border-border-strong/40 bg-primary p-3 sm:p-4">
+        <Card className={`rounded-xl border-border-strong/40 bg-primary p-3 sm:p-4 ${SHADOW.accentBase}`}>
           <div className="mb-1 h-3 w-32 animate-pulse rounded bg-primary-foreground/20" />
           <div className="h-7 w-8 animate-pulse rounded bg-primary-foreground/30" />
         </Card>
       </div>
       <div className="space-y-3">
         {[0, 1, 2].map((i) => (
-          <Card key={i} className="overflow-hidden border-surface/80 bg-surface/95 shadow-sm shadow-accent-soft/25">
-            <div className="h-1 bg-gradient-to-r from-primary to-accent opacity-30" />
+          <Card key={i} className={`overflow-hidden border-surface/80 bg-surface/95 ${SHADOW.accentBase}`}>
              <div className="p-4 sm:p-5 lg:p-4 2xl:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 space-y-3">
@@ -53,29 +79,36 @@ function ReclamosListSkeleton() {
 async function ReclamosList({
   clienteId,
   page,
+  filters,
+  filterParams,
+  hasFilters,
 }: {
   clienteId: string;
   page: number;
+  filters: MisBeneficiosFiltersType;
+  filterParams: URLSearchParams;
+  hasFilters: boolean;
 }) {
   const { reclamos, total, totalPages } = await getMisBeneficiosPageData(
     clienteId,
     page,
-    PAGE_SIZE
+    PAGE_SIZE,
+    filters
   );
 
   return (
     <>
       <div className="mb-5 sm:mb-6 lg:mb-5 2xl:mb-6">
-        <MetricCard label="Beneficios guardados" value={total} variant="primary" />
+        <MetricCard label="Beneficios guardados" value={total} variant="primary" elevated />
       </div>
 
       <div className="space-y-4 lg:space-y-3.5 2xl:space-y-4">
-        <MisBeneficiosList reclamos={reclamos} />
+        <MisBeneficiosList reclamos={reclamos} hasFilters={hasFilters} />
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between pt-1">
             <LinkButton
-              href={`/mis-beneficios?page=${page - 1}`}
+              href={buildPageHref(page - 1, filterParams)}
               variant="secondary"
               size="sm"
               className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
@@ -87,7 +120,7 @@ async function ReclamosList({
               Página {page} de {totalPages}
             </span>
             <LinkButton
-              href={`/mis-beneficios?page=${page + 1}`}
+              href={buildPageHref(page + 1, filterParams)}
               variant="secondary"
               size="sm"
               className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
@@ -105,9 +138,16 @@ async function ReclamosList({
 export default async function MisBeneficiosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; welcome?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    welcome?: string;
+    q?: string;
+    status?: string;
+    soloHoy?: string;
+    rubro?: string;
+  }>;
 }) {
-  const { page: pageParam, welcome } = await searchParams;
+  const { page: pageParam, welcome, q, status, soloHoy, rubro } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
 
   const session = await getClienteSessionFromCookies();
@@ -116,8 +156,27 @@ export default async function MisBeneficiosPage({
     redirect("/acceso");
   }
 
+  const filters: MisBeneficiosFiltersType = {
+    q: q?.trim() || undefined,
+    status: isValidReclamoStatus(status) ? status : undefined,
+    soloHoy: soloHoy === "1",
+    rubro: rubro?.trim() || undefined,
+  };
+
+  const filterParams = new URLSearchParams();
+  if (filters.q) filterParams.set("q", filters.q);
+  if (filters.status) filterParams.set("status", filters.status);
+  if (filters.soloHoy) filterParams.set("soloHoy", "1");
+  if (filters.rubro) filterParams.set("rubro", filters.rubro);
+
+  const hasFilters = Boolean(
+    filters.q || filters.status || filters.soloHoy || filters.rubro
+  );
+
+  const rubros = await getMisBeneficiosRubros(session.userId);
+
   return (
-    <main className="mx-auto max-w-3xl animate-[fade-in_0.3s_ease-out_both] px-4 pt-6 pb-12 sm:px-6 sm:pt-8 lg:max-w-2xl lg:pt-7 2xl:max-w-3xl 2xl:pt-8">
+    <main className="mx-auto max-w-5xl animate-[fade-in_0.3s_ease-out_both] px-4 pt-6 pb-12 sm:px-6 sm:pt-8 lg:max-w-4xl lg:pt-7 2xl:max-w-5xl 2xl:pt-8">
       {welcome === "1" ? <WelcomeModal /> : null}
       <SectionHeader
         eyebrow="Cliente"
@@ -127,8 +186,18 @@ export default async function MisBeneficiosPage({
         className="mb-5 sm:mb-6 lg:mb-5 2xl:mb-6"
       />
 
+      <Suspense fallback={null}>
+        <MisBeneficiosFilters rubros={rubros} />
+      </Suspense>
+
       <Suspense fallback={<ReclamosListSkeleton />}>
-        <ReclamosList clienteId={session.userId} page={page} />
+        <ReclamosList
+          clienteId={session.userId}
+          page={page}
+          filters={filters}
+          filterParams={filterParams}
+          hasFilters={hasFilters}
+        />
       </Suspense>
     </main>
   );
