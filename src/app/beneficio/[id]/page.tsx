@@ -109,6 +109,17 @@ export default async function BeneficioPublicoPage({
         Beneficios
       </LinkButton>
 
+      {clienteSession ? (
+        <LinkButton
+          href="/mis-beneficios"
+          variant="subtle"
+          size="sm"
+          className="absolute top-5 right-5 z-40 sm:top-6 sm:right-6"
+        >
+          Mis cupones
+        </LinkButton>
+      ) : null}
+
       <div className="my-auto w-full max-w-md lg:max-w-sm 2xl:max-w-md">
         <Reveal y={14} amount={0.3}>
           <div className="mb-7 text-center lg:mb-6 2xl:mb-7">
