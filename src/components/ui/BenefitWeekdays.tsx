@@ -30,6 +30,7 @@ export default function BenefitWeekdays({
   const normalizedDays = new Set(getNormalizedDiasValidos(diasValidos));
   const ariaLabel = getDiasValidosAriaLabel(diasValidos);
   const currentSize = sizeClasses[size];
+  const hasAllDaysEnabled = normalizedDays.size === BENEFICIO_WEEKDAYS.length;
 
   return (
     <ul
@@ -40,7 +41,19 @@ export default function BenefitWeekdays({
         className
       )}
     >
-      {BENEFICIO_WEEKDAYS.map((day) => {
+      {hasAllDaysEnabled ? (
+        <li className="list-none">
+          <span
+            aria-hidden="true"
+            className={cn(
+              "font-semibold uppercase tracking-[0.08em] transition-colors text-primary",
+              currentSize.letter
+            )}
+          >
+            Todos los días
+          </span>
+        </li>
+      ) : BENEFICIO_WEEKDAYS.map((day) => {
         const enabled = normalizedDays.has(day.value);
 
         return (
