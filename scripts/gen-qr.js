@@ -23,7 +23,7 @@ const TEXT_PADDING = 35;
 const TEXT_MAX_WIDTH = CANVAS_WIDTH - TEXT_PADDING * 2;
 
 const INSTRUCCION =
-  "Escanea este QR con tu celular para encontrar tu regalo y acercate luego al local para canjearlo.";
+  "Escaneá este QR con tu celular para ver tu regalo y luego acercate al local para canjearlo.";
 const URL_TEXT = "www.qupon.com.ar";
 
 async function main() {
