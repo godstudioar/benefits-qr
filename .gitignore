@@ -45,3 +45,7 @@ next-env.d.ts
 
 # agent registry
 .atl/
+
+# generated QR scripts output
+qr-output.png
+qr-*.png
