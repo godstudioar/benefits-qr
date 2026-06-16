@@ -48,12 +48,16 @@ model Beneficio {
   fechaExpiracion DateTime
   maxUsos         Int?
   diasValidos     Int[]     @default([])
-  esPublico       Boolean   @default(false)
-  localId         String
-  local           Local     @relation(fields: [localId], references: [id], onDelete: Cascade)
-  createdAt       DateTime  @default(now())
-  deletedAt       DateTime?
-  reclamos        Reclamo[]
+  esPublico         Boolean     @default(false)
+  mediosPago        MedioPago[] @default([])
+  esAcumulable      Boolean     @default(true)
+  condicionesExtra  String?
+  maxUsosPorCliente Int?
+  localId           String
+  local             Local       @relation(fields: [localId], references: [id], onDelete: Cascade)
+  createdAt         DateTime    @default(now())
+  deletedAt         DateTime?
+  reclamos          Reclamo[]
 
   @@index([localId])
   @@index([deletedAt])
@@ -81,6 +85,13 @@ enum EstadoReclamo {
   PENDIENTE
   CANJEADO
   CANCELADO
+}
+
+enum MedioPago {
+  EFECTIVO
+  TRANSFERENCIA
+  DEBITO
+  CREDITO
 }
 
 model Reclamo {

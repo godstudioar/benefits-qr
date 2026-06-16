@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, CalendarDays, CircleAlert, Store, Ticket, MapPinned } from "lucide-react";
+import { ArrowLeft, CalendarDays, CircleAlert, Store, Ticket, MapPinned, ShieldCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { EstadoReclamo } from "@/generated/prisma/client";
 export const revalidate = 60;
@@ -44,7 +44,15 @@ export default async function BeneficioPublicoPage({
         active: true,
       },
     },
-    include: {
+    select: {
+      id: true,
+      descripcion: true,
+      fechaExpiracion: true,
+      maxUsos: true,
+      diasValidos: true,
+      mediosPago: true,
+      esAcumulable: true,
+      condicionesExtra: true,
       local: { select: { nombre: true, logoUrl: true, direccion: true } },
       reclamos: { where: { estado: EstadoReclamo.CANJEADO }, select: { id: true } },
     },
@@ -73,7 +81,7 @@ export default async function BeneficioPublicoPage({
   const diasValidos: number[] = beneficio.diasValidos as number[];
   const beneficioState = evaluateBeneficioState({
     fechaExpiracion: beneficio.fechaExpiracion,
-    deletedAt: beneficio.deletedAt,
+    deletedAt: null,
     maxUsos: beneficio.maxUsos,
     canjeados: beneficio.reclamos.length,
     diasValidos,
@@ -217,6 +225,48 @@ export default async function BeneficioPublicoPage({
                   <BenefitWeekdays diasValidos={diasValidosOrdenados} />
                 </div>
               </div>
+
+              {(beneficio.mediosPago.length > 0 || !beneficio.esAcumulable || beneficio.condicionesExtra) && (
+                <div className="rounded-2xl border border-border-default/70 bg-surface-muted/70 p-4 lg:p-3.5 2xl:p-4">
+                  <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-muted lg:text-[11px] 2xl:text-xs">
+                    <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>Condiciones</span>
+                  </div>
+                  <div className="space-y-2 lg:space-y-1.5 2xl:space-y-2">
+                    {beneficio.mediosPago.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                        <span className="text-sm font-bold text-text-primary lg:text-[13px] 2xl:text-sm">
+                          Medios de pago:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {beneficio.mediosPago.map((medio) => {
+                            const label =
+                              medio === "EFECTIVO" ? "Efectivo" :
+                              medio === "TRANSFERENCIA" ? "Transferencia" :
+                              medio === "DEBITO" ? "Débito" :
+                              medio === "CREDITO" ? "Crédito" : medio;
+                            return (
+                              <Badge key={medio} variant="secondary" className="px-2.5 py-0.5 text-xs">
+                                {label}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {!beneficio.esAcumulable && (
+                      <p className="text-sm text-text-secondary lg:text-[13px] 2xl:text-sm">
+                        No acumulable con otros descuentos
+                      </p>
+                    )}
+                    {beneficio.condicionesExtra && (
+                      <p className="text-sm text-text-secondary lg:text-[13px] 2xl:text-sm">
+                        {beneficio.condicionesExtra}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {availability.message && (
                 <div

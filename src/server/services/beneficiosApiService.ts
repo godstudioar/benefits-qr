@@ -1,4 +1,4 @@
-import { EstadoReclamo, Prisma } from "@/generated/prisma/client";
+import { EstadoReclamo, MedioPago, Prisma } from "@/generated/prisma/client";
 import { getCurrentISODateInArgentina } from "@/lib/argentinaTime";
 import { prisma } from "@/lib/prisma";
 import {
@@ -29,6 +29,10 @@ type BeneficioWritableInput = {
   maxUsos?: unknown;
   diasValidos?: unknown;
   esPublico?: unknown;
+  mediosPago?: unknown;
+  esAcumulable?: unknown;
+  condicionesExtra?: unknown;
+  maxUsosPorCliente?: unknown;
 };
 
 type NormalizedBeneficioInput = Partial<{
@@ -37,6 +41,10 @@ type NormalizedBeneficioInput = Partial<{
   maxUsos: number | null;
   diasValidos: number[];
   esPublico: boolean;
+  mediosPago: MedioPago[];
+  esAcumulable: boolean;
+  condicionesExtra: string | null;
+  maxUsosPorCliente: number | null;
 }>;
 
 function createServiceError(status: number, code: string, message: string, field?: string): ServiceError {
@@ -138,6 +146,52 @@ function normalizeBeneficioInput(
     normalized.esPublico = input.esPublico === true;
   }
 
+  if (hasOwnInputField(input, "mediosPago")) {
+    const validValues = Object.values(MedioPago);
+    if (!Array.isArray(input.mediosPago)) {
+      return createServiceError(400, "INVALID_MEDIOS_PAGO", "Medios de pago inválidos", "mediosPago");
+    }
+    const filtered = input.mediosPago.filter((v): v is MedioPago => validValues.includes(v as MedioPago));
+    normalized.mediosPago = Array.from(new Set(filtered));
+  }
+
+  if (hasOwnInputField(input, "esAcumulable")) {
+    normalized.esAcumulable = input.esAcumulable !== false;
+  }
+
+  if (hasOwnInputField(input, "condicionesExtra")) {
+    if (input.condicionesExtra === null || input.condicionesExtra === undefined) {
+      normalized.condicionesExtra = null;
+    } else if (typeof input.condicionesExtra !== "string") {
+      return createServiceError(400, "INVALID_CONDICIONES_EXTRA", "Condiciones adicionales inválidas", "condicionesExtra");
+    } else {
+      const trimmed = input.condicionesExtra.trim();
+      if (trimmed.length > 150) {
+        return createServiceError(400, "INVALID_CONDICIONES_EXTRA", "Las condiciones adicionales no pueden superar los 150 caracteres", "condicionesExtra");
+      }
+      normalized.condicionesExtra = trimmed.length > 0 ? trimmed : null;
+    }
+  }
+
+  if (hasOwnInputField(input, "maxUsosPorCliente")) {
+    if (input.maxUsosPorCliente === null) {
+      normalized.maxUsosPorCliente = null;
+    } else if (
+      typeof input.maxUsosPorCliente !== "number" ||
+      !Number.isInteger(input.maxUsosPorCliente) ||
+      input.maxUsosPorCliente < 1
+    ) {
+      return createServiceError(
+        400,
+        "INVALID_MAX_USOS_POR_CLIENTE",
+        "La cantidad máxima de usos por cliente debe ser un número entero positivo",
+        "maxUsosPorCliente",
+      );
+    } else {
+      normalized.maxUsosPorCliente = input.maxUsosPorCliente;
+    }
+  }
+
   return { ok: true, data: normalized };
 }
 
@@ -181,6 +235,10 @@ export async function createBeneficioFlow(
     maxUsos: normalized.data.maxUsos ?? null,
     diasValidos: normalized.data.diasValidos ?? [],
     esPublico: normalized.data.esPublico ?? false,
+    mediosPago: normalized.data.mediosPago ?? [],
+    esAcumulable: normalized.data.esAcumulable ?? true,
+    condicionesExtra: normalized.data.condicionesExtra ?? null,
+    maxUsosPorCliente: normalized.data.maxUsosPorCliente ?? null,
     localId,
   });
 
@@ -207,6 +265,10 @@ export async function getBeneficioEditPageData(id: string, localId: string) {
       maxUsos: beneficio.maxUsos,
       diasValidos: beneficio.diasValidos,
       esPublico: beneficio.esPublico,
+      mediosPago: beneficio.mediosPago,
+      esAcumulable: beneficio.esAcumulable,
+      condicionesExtra: beneficio.condicionesExtra,
+      maxUsosPorCliente: beneficio.maxUsosPorCliente,
     },
     constraints: {
       canjeados,
