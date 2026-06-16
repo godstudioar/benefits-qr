@@ -24,3 +24,12 @@ export function usePublicBenefitsLocation() {
 
   return context;
 }
+
+/**
+ * Safe to use outside the provider (e.g. shared map wrappers that may render
+ * in landing sections without location context). Returns null when no provider
+ * is present so the component can fall back to a non-location-aware state.
+ */
+export function useOptionalPublicBenefitsLocation(): UseUserLocationResult | null {
+  return useContext(PublicBenefitsLocationContext);
+}

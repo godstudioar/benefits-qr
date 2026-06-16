@@ -144,8 +144,12 @@ export default function PublicBenefitsFilters({ rubros }: { rubros: Rubro[] }) {
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       {/* Búsqueda por nombre */}
       <div className="relative w-full sm:min-w-[190px] sm:flex-[2]">
+        <label htmlFor="public-search" className="sr-only">
+          Buscar local
+        </label>
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
         <input
+          id="public-search"
           type="text"
           placeholder="Buscar local..."
           value={searchValue}

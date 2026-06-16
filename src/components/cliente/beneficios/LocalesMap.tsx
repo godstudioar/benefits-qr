@@ -197,6 +197,10 @@ export default function LocalesMap({
   function buildSelectedBenefitsHref(localId: string) {
     const params = new URLSearchParams(benefitsHrefSearchParams);
     params.set("local", localId);
+    // Narrowing to a single local should switch to the list view and drop
+    // stale pagination / view state carried from the map.
+    params.delete("vista");
+    params.delete("page");
 
     const query = params.toString();
     return query ? `/beneficios?${query}` : "/beneficios";

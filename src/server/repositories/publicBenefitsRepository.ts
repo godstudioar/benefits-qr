@@ -46,6 +46,16 @@ const AVAILABLE_CONDITION = Prisma.sql`
   AND (b."maxUsos" IS NULL OR COALESCE(bs.canjeados, 0) < b."maxUsos")
 `;
 
+function parseRubroId(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+
+  if (!/^\d+$/.test(value)) return undefined;
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) return undefined;
+  return parsed;
+}
+
 async function _getPublicBenefitsCatalogRaw(
   page: number,
   pageSize: number,
@@ -57,9 +67,11 @@ async function _getPublicBenefitsCatalogRaw(
     ? Prisma.sql`AND l.nombre ILIKE ${"%" + filters.q + "%"}`
     : Prisma.empty;
 
-  // rubroId from the URL is a string; cast to int to match the column type
-  const rubroFilter = filters.rubroId
-    ? Prisma.sql`AND l."rubroId" = ${parseInt(filters.rubroId, 10)}`
+  // rubroId from the URL is a string; validate and cast to int before using it
+  // in a raw query so malformed values do not become broken SQL filters.
+  const rubroId = parseRubroId(filters.rubroId);
+  const rubroFilter = rubroId !== undefined
+    ? Prisma.sql`AND l."rubroId" = ${rubroId}`
     : Prisma.empty;
 
   const soloHoyFilter = filters.soloHoy
@@ -193,12 +205,13 @@ export const getPublicBenefitsCatalogRaw = (
   pageSize: number,
   filters: PublicBenefitsFiltersInput = {}
 ) => {
+  const rubroId = parseRubroId(filters.rubroId);
   const cacheKey = [
     "public-benefits-catalog",
     String(page),
     String(pageSize),
     filters.q ?? "",
-    filters.rubroId ?? "",
+    rubroId !== undefined ? String(rubroId) : "",
     filters.localId ?? "",
     filters.soloHoy ? "1" : "0",
     filters.soloDisponibles ? "1" : "0",
@@ -317,8 +330,9 @@ async function _getFilteredLocalesForPublicBenefitsRaw(
     ? Prisma.sql`AND l.nombre ILIKE ${"%" + filters.q + "%"}`
     : Prisma.empty;
 
-  const rubroFilter = filters.rubroId
-    ? Prisma.sql`AND l."rubroId" = ${parseInt(filters.rubroId, 10)}`
+  const rubroId = parseRubroId(filters.rubroId);
+  const rubroFilter = rubroId !== undefined
+    ? Prisma.sql`AND l."rubroId" = ${rubroId}`
     : Prisma.empty;
 
   const soloHoyFilter = filters.soloHoy
@@ -388,10 +402,11 @@ async function _getFilteredLocalesForPublicBenefitsRaw(
 }
 
 export const getFilteredLocalesForPublicBenefitsRaw = (filters: PublicBenefitsFiltersInput = {}) => {
+  const rubroId = parseRubroId(filters.rubroId);
   const cacheKey = [
     "public-benefits-locales",
     filters.q ?? "",
-    filters.rubroId ?? "",
+    rubroId !== undefined ? String(rubroId) : "",
     filters.localId ?? "",
     filters.soloHoy ? "1" : "0",
     filters.soloDisponibles ? "1" : "0",

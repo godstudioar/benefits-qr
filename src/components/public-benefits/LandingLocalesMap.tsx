@@ -1,6 +1,7 @@
 "use client";
 import { Suspense, lazy } from "react";
 import MapsProvider from "@/components/maps/MapsProvider";
+import { useOptionalPublicBenefitsLocation } from "@/components/public-benefits/PublicBenefitsLocationContext";
 import type { LocalConBeneficiosRaw } from "@/server/repositories/localesMapRepository";
 
 const LocalesMap = lazy(() => import("@/components/cliente/beneficios/LocalesMap"));
@@ -16,6 +17,9 @@ export default function LandingLocalesMap({
   benefitsHrefSearchParams?: string;
   emptyStateMessage?: string;
 }) {
+  const location = useOptionalPublicBenefitsLocation();
+  const userCoords = location?.coords ?? null;
+
   return (
     <MapsProvider>
       <Suspense
@@ -23,7 +27,7 @@ export default function LandingLocalesMap({
       >
         <LocalesMap
           locales={locales}
-          userCoords={null}
+          userCoords={userCoords}
           heightClassName={HEIGHT}
           benefitCountLabel="coincidentes"
           benefitsHrefSearchParams={benefitsHrefSearchParams}
