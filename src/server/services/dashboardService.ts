@@ -1,6 +1,11 @@
-import { getDashboardRaw } from "@/server/repositories/dashboardRepository";
+import {
+  getDashboardRaw,
+  type DashboardFiltersInput,
+} from "@/server/repositories/dashboardRepository";
 import { evaluateBeneficioState, type BeneficioEffectiveStatus } from "@/lib/couponStatus";
 import { parseRawDbTimestamp } from "@/lib/dates";
+
+export type DashboardFilters = DashboardFiltersInput;
 
 export type BeneficioRow = {
   id: string;
@@ -16,9 +21,10 @@ export type BeneficioRow = {
 export async function getDashboardPageData(
   localId: string,
   page: number,
-  pageSize: number
+  pageSize: number,
+  filters: DashboardFilters = {}
 ) {
-  const raw = await getDashboardRaw(localId, page, pageSize);
+  const raw = await getDashboardRaw(localId, page, pageSize, filters);
 
   const local = raw.local;
   const totalBeneficios = Number(raw.totalBeneficios ?? 0);
@@ -32,9 +38,10 @@ export async function getDashboardPageData(
 
   const beneficios: BeneficioRow[] = (raw.beneficios ?? []).map((b) => {
     const fechaExpiracion = parseRawDbTimestamp(b.fechaExpiracion);
+    const deletedAt = b.deletedAt ? parseRawDbTimestamp(b.deletedAt) : null;
     const beneficioState = evaluateBeneficioState({
       fechaExpiracion,
-      deletedAt: null,
+      deletedAt,
       maxUsos: b.maxUsos,
       canjeados: b.canjeados,
       diasValidos: b.diasValidos,

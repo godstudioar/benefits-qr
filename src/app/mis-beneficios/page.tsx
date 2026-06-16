@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import MisBeneficiosFilters from "@/components/cliente/beneficio/MisBeneficiosFilters";
 import MisBeneficiosList from "@/components/cliente/beneficio/MisBeneficiosList";
 import WelcomeModal from "@/components/cliente/beneficio/WelcomeModal";
 import LinkButton from "@/components/ui/LinkButton";
@@ -7,11 +8,36 @@ import MetricCard from "@/components/ui/MetricCard";
 import Card from "@/components/ui/Card";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { SHADOW } from "@/lib/shadowStyles";
-import { getMisBeneficiosPageData } from "@/server/services/misBeneficiosService";
+import {
+  getMisBeneficiosPageData,
+  getMisBeneficiosRubros,
+  type MisBeneficiosFilters as MisBeneficiosFiltersType,
+} from "@/server/services/misBeneficiosService";
 import { getClienteSessionFromCookies } from "@/lib/auth";
 import { UserType } from "@/lib/enums";
+import { ReclamoEffectiveStatus } from "@/lib/couponStatus";
 
 const PAGE_SIZE = 10;
+
+function isValidReclamoStatus(
+  value: string | undefined
+): value is ReclamoEffectiveStatus {
+  return (
+    value !== undefined &&
+    Object.values(ReclamoEffectiveStatus).includes(value as ReclamoEffectiveStatus)
+  );
+}
+
+function buildPageHref(pageNum: number, filterParams: URLSearchParams) {
+  const params = new URLSearchParams(filterParams);
+  if (pageNum > 1) {
+    params.set("page", String(pageNum));
+  } else {
+    params.delete("page");
+  }
+  const qs = params.toString();
+  return qs ? `/mis-beneficios?${qs}` : "/mis-beneficios";
+}
 
 function ReclamosListSkeleton() {
   return (
@@ -53,14 +79,21 @@ function ReclamosListSkeleton() {
 async function ReclamosList({
   clienteId,
   page,
+  filters,
+  filterParams,
+  hasFilters,
 }: {
   clienteId: string;
   page: number;
+  filters: MisBeneficiosFiltersType;
+  filterParams: URLSearchParams;
+  hasFilters: boolean;
 }) {
   const { reclamos, total, totalPages } = await getMisBeneficiosPageData(
     clienteId,
     page,
-    PAGE_SIZE
+    PAGE_SIZE,
+    filters
   );
 
   return (
@@ -70,12 +103,12 @@ async function ReclamosList({
       </div>
 
       <div className="space-y-4 lg:space-y-3.5 2xl:space-y-4">
-        <MisBeneficiosList reclamos={reclamos} />
+        <MisBeneficiosList reclamos={reclamos} hasFilters={hasFilters} />
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between pt-1">
             <LinkButton
-              href={`/mis-beneficios?page=${page - 1}`}
+              href={buildPageHref(page - 1, filterParams)}
               variant="secondary"
               size="sm"
               className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
@@ -87,7 +120,7 @@ async function ReclamosList({
               Página {page} de {totalPages}
             </span>
             <LinkButton
-              href={`/mis-beneficios?page=${page + 1}`}
+              href={buildPageHref(page + 1, filterParams)}
               variant="secondary"
               size="sm"
               className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
@@ -105,9 +138,16 @@ async function ReclamosList({
 export default async function MisBeneficiosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; welcome?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    welcome?: string;
+    q?: string;
+    status?: string;
+    soloHoy?: string;
+    rubro?: string;
+  }>;
 }) {
-  const { page: pageParam, welcome } = await searchParams;
+  const { page: pageParam, welcome, q, status, soloHoy, rubro } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
 
   const session = await getClienteSessionFromCookies();
@@ -116,8 +156,27 @@ export default async function MisBeneficiosPage({
     redirect("/acceso");
   }
 
+  const filters: MisBeneficiosFiltersType = {
+    q: q?.trim() || undefined,
+    status: isValidReclamoStatus(status) ? status : undefined,
+    soloHoy: soloHoy === "1",
+    rubro: rubro?.trim() || undefined,
+  };
+
+  const filterParams = new URLSearchParams();
+  if (filters.q) filterParams.set("q", filters.q);
+  if (filters.status) filterParams.set("status", filters.status);
+  if (filters.soloHoy) filterParams.set("soloHoy", "1");
+  if (filters.rubro) filterParams.set("rubro", filters.rubro);
+
+  const hasFilters = Boolean(
+    filters.q || filters.status || filters.soloHoy || filters.rubro
+  );
+
+  const rubros = await getMisBeneficiosRubros(session.userId);
+
   return (
-    <main className="mx-auto max-w-3xl animate-[fade-in_0.3s_ease-out_both] px-4 pt-6 pb-12 sm:px-6 sm:pt-8 lg:max-w-2xl lg:pt-7 2xl:max-w-3xl 2xl:pt-8">
+    <main className="mx-auto max-w-5xl animate-[fade-in_0.3s_ease-out_both] px-4 pt-6 pb-12 sm:px-6 sm:pt-8 lg:max-w-4xl lg:pt-7 2xl:max-w-5xl 2xl:pt-8">
       {welcome === "1" ? <WelcomeModal /> : null}
       <SectionHeader
         eyebrow="Cliente"
@@ -127,8 +186,18 @@ export default async function MisBeneficiosPage({
         className="mb-5 sm:mb-6 lg:mb-5 2xl:mb-6"
       />
 
+      <Suspense fallback={null}>
+        <MisBeneficiosFilters rubros={rubros} />
+      </Suspense>
+
       <Suspense fallback={<ReclamosListSkeleton />}>
-        <ReclamosList clienteId={session.userId} page={page} />
+        <ReclamosList
+          clienteId={session.userId}
+          page={page}
+          filters={filters}
+          filterParams={filterParams}
+          hasFilters={hasFilters}
+        />
       </Suspense>
     </main>
   );

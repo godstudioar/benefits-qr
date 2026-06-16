@@ -1,6 +1,8 @@
 import {
   getMisBeneficioRow,
   getMisBeneficiosRows,
+  getMisBeneficiosRubros,
+  type MisBeneficiosFiltersInput,
   type ReclamoStatusRow,
 } from "@/server/repositories/misBeneficiosRepository";
 import {
@@ -43,12 +45,15 @@ function mapReclamoRow(r: ReclamoStatusRow) {
   };
 }
 
+export type MisBeneficiosFilters = MisBeneficiosFiltersInput;
+
 export async function getMisBeneficiosPageData(
   clienteId: string,
   page: number,
-  pageSize: number
+  pageSize: number,
+  filters: MisBeneficiosFilters = {}
 ) {
-  const rows = await getMisBeneficiosRows(clienteId, page, pageSize);
+  const rows = await getMisBeneficiosRows(clienteId, page, pageSize, filters);
   const total = rows[0]?.totalCount ?? 0;
 
   const reclamos = rows.map(mapReclamoRow);
@@ -69,3 +74,5 @@ export async function getMisBeneficioStatusData(clienteId: string, reclamoId: st
 
   return mapReclamoRow(row);
 }
+
+export { getMisBeneficiosRubros };

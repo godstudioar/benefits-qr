@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import DashboardFilters from "@/components/local/dashboard/DashboardFilters";
 import DashboardRefreshButton from "@/components/local/dashboard/DashboardRefreshButton";
 import ShareButtons from "@/components/local/dashboard/ShareButtons";
 import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
@@ -13,17 +15,48 @@ import { UserType } from "@/lib/enums";
 import { getLocalLogoDisplayUrl } from "@/lib/localLogoSource";
 import { getBeneficioStatusPresentation } from "@/lib/statusPresentation";
 import { INTERACTION, SHADOW } from "@/lib/shadowStyles";
-import { getDashboardPageData } from "@/server/services/dashboardService";
+import {
+  getDashboardPageData,
+  type DashboardFilters as DashboardFiltersType,
+} from "@/server/services/dashboardService";
+import { BeneficioEffectiveStatus } from "@/lib/couponStatus";
 import { redirect } from "next/navigation";
 
 const PAGE_SIZE = 10;
 
+function isValidDashboardStatus(
+  value: string | undefined
+): value is BeneficioEffectiveStatus {
+  return (
+    value !== undefined &&
+    Object.values(BeneficioEffectiveStatus).includes(
+      value as BeneficioEffectiveStatus
+    )
+  );
+}
+
+function buildPageHref(pageNum: number, filterParams: URLSearchParams) {
+  const params = new URLSearchParams(filterParams);
+  if (pageNum > 1) {
+    params.set("page", String(pageNum));
+  } else {
+    params.delete("page");
+  }
+  const qs = params.toString();
+  return qs ? `/dashboard?${qs}` : "/dashboard";
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+    status?: string;
+    soloHoy?: string;
+  }>;
 }) {
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, q, status, soloHoy } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
 
   const session = await getSessionFromCookies();
@@ -31,12 +64,27 @@ export default async function DashboardPage({
     redirect("/login");
   }
 
+  const filters: DashboardFiltersType = {
+    q: q?.trim() || undefined,
+    status: isValidDashboardStatus(status) ? status : undefined,
+    soloHoy: soloHoy === "1",
+  };
+
+  const filterParams = new URLSearchParams();
+  if (filters.q) filterParams.set("q", filters.q);
+  if (filters.status) filterParams.set("status", filters.status);
+  if (filters.soloHoy) filterParams.set("soloHoy", "1");
+
+  const hasFilters = Boolean(
+    filters.q || filters.status || filters.soloHoy
+  );
+
   const {
     local,
     beneficios,
     totalBeneficios,
     totalPages,
-  } = await getDashboardPageData(session.userId, page, PAGE_SIZE);
+  } = await getDashboardPageData(session.userId, page, PAGE_SIZE, filters);
 
   if (!local) redirect("/login");
   if (local.nombre === null) redirect("/onboarding");
@@ -92,38 +140,41 @@ export default async function DashboardPage({
       {/* Beneficios */}
       <div id="mis-cupones" className="scroll-mt-24">
         <Reveal y={8} amount={0.2} className="mb-4">
-          <div className={`flex flex-col gap-3 rounded-2xl border border-surface/80 bg-surface/95 p-4 ${SHADOW.cardBase} sm:bg-surface/85 sm:p-5 lg:gap-2.5 lg:p-4 2xl:gap-3 2xl:p-5`}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-bold text-text-primary lg:text-lg 2xl:text-xl">Mis cupones</h2>
-                <p className="text-sm font-medium text-text-muted lg:text-[13px] 2xl:text-sm">
-                  Gestioná estado, vigencia y acciones de cada cupón.
-                </p>
-              </div>
-              <div className="self-center">
-                <DashboardRefreshButton />
-              </div>
+          <div className={`flex items-center justify-between gap-3 rounded-2xl border border-surface/80 bg-surface/95 p-4 ${SHADOW.cardBase} sm:bg-surface/85 sm:p-5 lg:p-4 2xl:p-5`}>
+            <h2 className="text-xl font-bold text-text-primary lg:text-lg 2xl:text-xl">Mis cupones</h2>
+            <div className="self-center">
+              <DashboardRefreshButton />
             </div>
           </div>
         </Reveal>
       </div>
 
+      <Suspense fallback={null}>
+        <DashboardFilters />
+      </Suspense>
+
       {totalBeneficios === 0 ? (
         <Reveal y={12} amount={0.2}>
            <Card className={`border-surface/70 bg-surface/90 p-10 text-center ${SHADOW.accentBase} sm:bg-surface/75 sm:backdrop-blur-md sm:p-12 lg:p-9 2xl:p-12`}>
             <p className="mb-2 text-base font-medium text-text-primary">
-              No tenés cupones aún
+              {hasFilters
+                ? "No se encontraron cupones con los filtros aplicados"
+                : "No tenés cupones aún"}
             </p>
             <p className="mb-5 text-sm text-text-muted">
-              Creá el primero para empezar a recibir reclamos.
+              {hasFilters
+                ? "Probá con otros filtros o limpiá la búsqueda."
+                : "Creá el primero para empezar a recibir reclamos."}
             </p>
-            <LinkButton
-              href="/dashboard/beneficios/nuevo"
-              variant="primary"
-              size="sm"
-            >
-              Crear primer cupón
-            </LinkButton>
+            {!hasFilters && (
+              <LinkButton
+                href="/dashboard/beneficios/nuevo"
+                variant="primary"
+                size="sm"
+              >
+                Crear primer cupón
+              </LinkButton>
+            )}
           </Card>
         </Reveal>
       ) : (
@@ -237,7 +288,7 @@ export default async function DashboardPage({
           {totalPages > 1 && (
              <div className="flex items-center justify-between pt-3 lg:pt-2.5 2xl:pt-3">
               <LinkButton
-                href={`/dashboard?page=${page - 1}`}
+                href={buildPageHref(page - 1, filterParams)}
                 variant="secondary"
                 size="sm"
                 className={
@@ -251,7 +302,7 @@ export default async function DashboardPage({
                 Página {page} de {totalPages}
               </span>
               <LinkButton
-                href={`/dashboard?page=${page + 1}`}
+                href={buildPageHref(page + 1, filterParams)}
                 variant="secondary"
                 size="sm"
                 className={

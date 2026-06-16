@@ -33,15 +33,21 @@ type Reclamo = {
 
 export default function MisBeneficiosList({
   reclamos,
+  hasFilters = false,
 }: {
   reclamos: Reclamo[];
+  hasFilters?: boolean;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (reclamos.length === 0) {
     return (
       <Card className={`border-surface/80 bg-surface/95 p-10 text-center ${SHADOW.accentBase} sm:bg-surface/85 sm:p-12 lg:p-9 2xl:p-12`}>
-        <p className="text-text-muted">No tenés cupones reclamados aún</p>
+        <p className="text-text-muted">
+          {hasFilters
+            ? "No se encontraron cupones con los filtros aplicados"
+            : "No tenés cupones reclamados aún"}
+        </p>
       </Card>
     );
   }

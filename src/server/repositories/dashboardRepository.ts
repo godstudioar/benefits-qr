@@ -1,4 +1,12 @@
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { BeneficioEffectiveStatus } from "@/lib/couponStatus";
+
+export type DashboardFiltersInput = {
+  q?: string;
+  status?: BeneficioEffectiveStatus;
+  soloHoy?: boolean;
+};
 
 export type DashboardRaw = {
   local: {
@@ -16,6 +24,7 @@ export type DashboardRaw = {
     fechaExpiracion: string;
     maxUsos: number | null;
     diasValidos: number[];
+    deletedAt: string | null;
     totalReclamos: number;
     canjeados: number;
   }> | null;
@@ -29,11 +38,67 @@ export type DashboardRaw = {
   proximosAVencer: number;
 };
 
+const BENEFICIO_AVAILABLE_CONDITION = Prisma.sql`
+  b."deletedAt" IS NULL
+  AND b."fechaExpiracion" >= CURRENT_TIMESTAMP
+  AND (b."maxUsos" IS NULL OR COALESCE(bs.canjeados, 0) < b."maxUsos")
+`;
+
+const STATUS_CONDITIONS: Record<BeneficioEffectiveStatus, Prisma.Sql> = {
+  [BeneficioEffectiveStatus.ACTIVO]: BENEFICIO_AVAILABLE_CONDITION,
+  [BeneficioEffectiveStatus.VENCIDO]: Prisma.sql`
+    b."deletedAt" IS NULL
+    AND b."fechaExpiracion" < CURRENT_TIMESTAMP
+  `,
+  [BeneficioEffectiveStatus.AGOTADO]: Prisma.sql`
+    b."deletedAt" IS NULL
+    AND b."fechaExpiracion" >= CURRENT_TIMESTAMP
+    AND b."maxUsos" IS NOT NULL
+    AND COALESCE(bs.canjeados, 0) >= b."maxUsos"
+  `,
+  [BeneficioEffectiveStatus.ELIMINADO]: Prisma.sql`b."deletedAt" IS NOT NULL`,
+};
+
+function buildDashboardFilters(filters: DashboardFiltersInput): Prisma.Sql {
+  const conditions: Prisma.Sql[] = [];
+
+  if (filters.q?.trim()) {
+    conditions.push(
+      Prisma.sql`b.descripcion ILIKE ${"%" + filters.q.trim() + "%"}`
+    );
+  }
+
+  if (filters.status && STATUS_CONDITIONS[filters.status]) {
+    conditions.push(STATUS_CONDITIONS[filters.status]);
+  } else {
+    conditions.push(Prisma.sql`b."deletedAt" IS NULL`);
+  }
+
+  if (filters.soloHoy) {
+    conditions.push(BENEFICIO_AVAILABLE_CONDITION);
+    conditions.push(
+      Prisma.sql`(
+        array_length(b."diasValidos", 1) IS NULL
+        OR array_length(b."diasValidos", 1) = 0
+        OR EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int = ANY(b."diasValidos")
+      )`
+    );
+  }
+
+  if (conditions.length === 0) return Prisma.empty;
+
+  return Prisma.sql`AND ${Prisma.join(conditions, " AND ")}`;
+}
+
 export async function getDashboardRaw(
   localId: string,
   page: number,
-  pageSize: number
+  pageSize: number,
+  filters: DashboardFiltersInput = {}
 ): Promise<DashboardRaw> {
+  const filterSql = buildDashboardFilters(filters);
+  const offset = Math.max(0, (page - 1) * pageSize);
+
   const [raw] = await prisma.$queryRaw<[DashboardRaw]>`
     WITH
       local_cte AS (
@@ -42,34 +107,42 @@ export async function getDashboardRaw(
         LEFT JOIN "Rubro" ru ON ru.id = l."rubroId"
         WHERE l.id = ${localId}
       ),
-      paged_beneficios_cte AS (
+      beneficio_stats_all_cte AS (
+        SELECT
+          r."beneficioId",
+          COUNT(*)::int                                          AS "totalReclamos",
+          COUNT(*) FILTER (WHERE r.estado = 'CANJEADO')::int    AS canjeados
+        FROM "Reclamo" r
+        WHERE r."beneficioId" IN (
+          SELECT b.id FROM "Beneficio" b WHERE b."localId" = ${localId}
+        )
+        GROUP BY r."beneficioId"
+      ),
+      filtered_beneficios_cte AS (
         SELECT
           b.id,
           b.descripcion,
           b."fechaExpiracion",
           b."maxUsos",
           b."diasValidos",
-          b."createdAt"
+          b."deletedAt",
+          b."createdAt",
+          COALESCE(bs."totalReclamos", 0) AS "totalReclamos",
+          COALESCE(bs.canjeados, 0)        AS canjeados
         FROM "Beneficio" b
+        LEFT JOIN beneficio_stats_all_cte bs ON bs."beneficioId" = b.id
         WHERE b."localId" = ${localId}
-          AND b."deletedAt" IS NULL
-        ORDER BY b."createdAt" DESC
-        LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}
+          ${filterSql}
       ),
-      beneficio_stats_cte AS (
-        SELECT
-          r."beneficioId",
-          COUNT(*)::int                                          AS "totalReclamos",
-          COUNT(*) FILTER (WHERE r.estado = 'CANJEADO')::int    AS "canjeados"
-        FROM "Reclamo" r
-        JOIN paged_beneficios_cte b ON b.id = r."beneficioId"
-        GROUP BY r."beneficioId"
+      paged_beneficios_cte AS (
+        SELECT *
+        FROM filtered_beneficios_cte
+        ORDER BY "createdAt" DESC
+        LIMIT ${pageSize} OFFSET ${offset}
       ),
       total_cte AS (
         SELECT COUNT(*)::int AS count
-        FROM "Beneficio"
-        WHERE "localId" = ${localId}
-          AND "deletedAt" IS NULL
+        FROM filtered_beneficios_cte
       ),
       reclamo_stats_cte AS (
         SELECT
@@ -111,13 +184,13 @@ export async function getDashboardRaw(
               'fechaExpiracion', b."fechaExpiracion",
               'maxUsos', b."maxUsos",
               'diasValidos', b."diasValidos",
-              'totalReclamos', COALESCE(bs."totalReclamos", 0),
-              'canjeados', COALESCE(bs."canjeados", 0)
+              'deletedAt', b."deletedAt",
+              'totalReclamos', b."totalReclamos",
+              'canjeados', b.canjeados
             )
             ORDER BY b."createdAt" DESC
           )
           FROM paged_beneficios_cte b
-          LEFT JOIN beneficio_stats_cte bs ON bs."beneficioId" = b.id
         ),
         '[]'::json
       )                                                                                     AS beneficios,
