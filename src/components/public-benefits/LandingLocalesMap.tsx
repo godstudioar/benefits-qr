@@ -6,7 +6,7 @@ import type { LocalConBeneficiosRaw } from "@/server/repositories/localesMapRepo
 
 const LocalesMap = lazy(() => import("@/components/cliente/beneficios/LocalesMap"));
 
-const HEIGHT = "h-[400px] sm:h-[460px] lg:h-full lg:min-h-[520px]";
+const HEIGHT = "h-[400px] sm:h-[460px] lg:h-[520px] xl:h-[560px]";
 
 export default function LandingLocalesMap({
   locales,

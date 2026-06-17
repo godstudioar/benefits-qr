@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, MapPin, Store, Ticket, MapPinned } from "lucide-react";
+import { CalendarDays, MapPin, Store, Ticket, MapPinned } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
 import Card from "@/components/ui/Card";
@@ -52,11 +52,11 @@ export default function PublicBenefitCard({
             />
 
             <div className="min-w-0 flex-1 space-y-1">
-              <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+              <div className="relative min-w-0 pr-20 sm:pr-24">
                 <p className="min-w-0 line-clamp-1 text-xs font-medium text-primary">{localName}</p>
                 <Badge
                   variant={benefit.availability.badgeVariant}
-                  className="self-start px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] sm:shrink-0"
+                  className="absolute top-0 right-0 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] sm:shrink-0"
                 >
                   {benefit.availability.badgeLabel}
                 </Badge>
@@ -91,10 +91,6 @@ export default function PublicBenefitCard({
               <BenefitWeekdays diasValidos={benefit.diasValidos} className="text-text-muted/80" />
             </div>
 
-            <ArrowRight
-              className="hidden h-4 w-4 shrink-0 text-primary transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-accent sm:block"
-              aria-hidden="true"
-            />
           </div>
         ) : (
           <div className="flex h-full items-start gap-4 p-4 sm:p-5">
@@ -131,12 +127,12 @@ export default function PublicBenefitCard({
                   </Badge>
                 </div>
 
-                <h3
-                  className={cn(
-                    "line-clamp-2 pr-2 font-semibold tracking-tight text-text-primary sm:pr-0",
-                    compactDesktop ? "text-base sm:text-base" : "text-lg sm:text-xl"
-                  )}
-                >
+                  <h3
+                    className={cn(
+                      "line-clamp-2 font-semibold tracking-tight text-text-primary",
+                      compactDesktop ? "text-base sm:text-base" : "text-lg sm:text-xl"
+                    )}
+                  >
                   {benefit.descripcion}
                 </h3>
               </div>
@@ -186,10 +182,6 @@ export default function PublicBenefitCard({
               ) : null}
             </div>
 
-            <ArrowRight
-              className="my-auto h-4 w-4 shrink-0 text-primary transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-accent"
-              aria-hidden="true"
-            />
           </div>
         )}
       </Card>
