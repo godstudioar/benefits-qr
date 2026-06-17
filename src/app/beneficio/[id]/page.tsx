@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, CalendarDays, CircleAlert, Store, Ticket, MapPinned, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CalendarDays, CircleAlert, Ticket, MapPinned, ShieldCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { EstadoReclamo } from "@/generated/prisma/client";
 export const revalidate = 60;
@@ -151,43 +151,30 @@ export default async function BeneficioPublicoPage({
         <Reveal delay={0.06} y={16} amount={0.35}>
           <Card className={`overflow-hidden border-surface/80 bg-surface/90 ${SHADOW.focalBase} sm:bg-surface/80 sm:backdrop-blur-md`}>
             <div className="space-y-5 p-6 sm:p-8 lg:space-y-4 lg:p-6 2xl:space-y-5 2xl:p-8">
-              <div className="space-y-3 lg:space-y-2.5 2xl:space-y-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-1">
+              <div className="relative pt-8 sm:pt-6">
+                <Badge
+                  variant={availability.badgeVariant}
+                  className="absolute top-0 right-0 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] sm:px-3 sm:py-1 sm:text-[11px] sm:tracking-[0.14em]"
+                >
+                  {availability.badgeLabel}
+                </Badge>
+
+                <div className="flex flex-col items-center gap-4 text-center lg:gap-3.5 2xl:gap-4">
+                  <LogoFrame
+                    src={beneficio.local.logoUrl}
+                    alt={`Logo de ${localName}`}
+                    name={localName}
+                    className="h-20 w-20 rounded-2xl lg:h-16 lg:w-16 2xl:h-20 2xl:w-20"
+                    fallbackClassName="text-lg lg:text-base 2xl:text-lg"
+                  />
+
+                  <div className="space-y-1.5 lg:space-y-1 2xl:space-y-1.5">
+                   
                     <h1 className="text-2xl font-bold text-text-primary lg:text-xl 2xl:text-2xl">{beneficio.descripcion}</h1>
                     <p className="text-sm text-text-muted lg:text-[13px] 2xl:text-sm">
                       {isDirectFlow
                         ? "Canje inmediato para mostrar en caja sin pasos extra."
                         : "Guardalo ahora y usalo cuando corresponda."}
-                    </p>
-                  </div>
-
-                  <Badge
-                    variant={availability.badgeVariant}
-                    className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]"
-                  >
-                    {availability.badgeLabel}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border-default/70 bg-surface-muted/70 p-4 lg:p-3.5 2xl:p-4">
-                <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
-                  <LogoFrame
-                    src={beneficio.local.logoUrl}
-                    alt={`Logo de ${localName}`}
-                    name={localName}
-                    className="h-11 w-11 rounded-xl lg:h-10 lg:w-10 2xl:h-11 2xl:w-11"
-                    fallbackClassName="text-sm lg:text-[13px] 2xl:text-sm"
-                  />
-
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex items-center gap-2 text-xs font-medium text-text-muted lg:text-[11px] 2xl:text-xs">
-                      <Store className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span>Local adherido</span>
-                    </div>
-                    <p className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
-                      {localName}
                     </p>
                   </div>
                 </div>
