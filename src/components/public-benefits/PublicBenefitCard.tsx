@@ -38,40 +38,41 @@ export default function PublicBenefitCard({
             className="h-12 w-12 rounded-2xl"
           />
 
-          <div className="relative min-w-0 flex-1 space-y-3">
-            <div className="min-w-0 pr-24 sm:pr-28">
-              <div className="min-w-0 flex-1 space-y-1">
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="space-y-1">
+              <div className="flex items-start justify-between gap-2">
                 <p
                   className={cn(
-                    "flex items-center gap-1.5 font-medium text-primary",
+                    "min-w-0 flex items-center gap-1.5 font-medium text-primary",
                     compactDesktop ? "text-[11px] sm:text-xs" : "text-xs"
                   )}
                 >
-                  <Store className="h-3.5 w-3.5" aria-hidden="true" />
+                  <Store className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   <span className="min-w-0 line-clamp-1">{localName}</span>
                 </p>
-                <h3
+
+                <Badge
+                  variant={benefit.availability.badgeVariant}
                   className={cn(
-                    "line-clamp-2 font-semibold tracking-tight text-text-primary",
-                    compactDesktop ? "text-base sm:text-base" : "text-lg sm:text-xl"
+                    "shrink-0 self-start font-semibold uppercase",
+                    compactDesktop
+                      ? "px-2.5 py-0.5 text-[10px] tracking-[0.12em]"
+                      : "px-3 py-1 text-[11px] tracking-[0.14em]"
                   )}
                 >
-                  {benefit.descripcion}
-                </h3>
+                  {benefit.availability.badgeLabel}
+                </Badge>
               </div>
-            </div>
 
-            <Badge
-              variant={benefit.availability.badgeVariant}
-              className={cn(
-                "absolute top-0 right-0 shrink-0 font-semibold uppercase",
-                compactDesktop
-                  ? "px-2.5 py-0.5 text-[10px] tracking-[0.12em]"
-                  : "px-3 py-1 text-[11px] tracking-[0.14em]"
-              )}
-            >
-              {benefit.availability.badgeLabel}
-            </Badge>
+              <h3
+                className={cn(
+                  "line-clamp-2 pr-2 font-semibold tracking-tight text-text-primary sm:pr-0",
+                  compactDesktop ? "text-base sm:text-base" : "text-lg sm:text-xl"
+                )}
+              >
+                {benefit.descripcion}
+              </h3>
+            </div>
 
             {benefit.local.direccion && (
               <div className="flex flex-wrap gap-2">
@@ -82,7 +83,7 @@ export default function PublicBenefitCard({
               </div>
             )}
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-nowrap gap-2">
               <Badge variant="muted" className="gap-1.5 px-3 py-1">
                 <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
                 Vence {formatDateAR(benefit.fechaExpiracion)}

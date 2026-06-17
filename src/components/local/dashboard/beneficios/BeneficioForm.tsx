@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Globe, ShieldCheck } from "lucide-react";
+import { CalendarDays, ChevronDown, Globe, ShieldCheck } from "lucide-react";
 import type { MedioPago } from "@/generated/prisma/client";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -89,6 +89,7 @@ function getTodayDateString() {
 }
 
 export default function BeneficioForm({
+  mode,
   initialData,
   submitConfig,
   constraintCopy,
@@ -108,6 +109,9 @@ export default function BeneficioForm({
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<(typeof FIELD_ERROR_KEYS)[number], string>>>({});
   const [loading, setLoading] = useState(false);
+  const [isDaysOpen, setIsDaysOpen] = useState(mode === "edit");
+  const [isVisibilityOpen, setIsVisibilityOpen] = useState(mode === "edit");
+  const [isConditionsOpen, setIsConditionsOpen] = useState(mode === "edit");
 
   const minDate = getTodayDateString();
   const todosLosDias = diasValidos.length === 0;
@@ -244,18 +248,29 @@ export default function BeneficioForm({
       </div>
 
       <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
-        <div className="mb-3 flex items-start gap-3 lg:mb-2.5 lg:gap-2.5 2xl:mb-3 2xl:gap-3">
-          <div className="rounded-xl bg-primary-soft p-2 text-primary">
-            <CalendarDays className="h-4 w-4" aria-hidden="true" />
+        <button
+          type="button"
+          onClick={() => setIsDaysOpen((prev) => !prev)}
+          aria-expanded={isDaysOpen}
+          className="flex w-full items-start justify-between gap-3 text-left"
+        >
+          <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
+            <div className="rounded-xl bg-primary-soft p-2 text-primary">
+              <CalendarDays className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
+                Días disponibles
+              </h2>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
-              Días disponibles
-            </h2>
-          </div>
-        </div>
+          <ChevronDown
+            className={cn("mt-1 h-4 w-4 shrink-0 text-text-muted transition-transform", isDaysOpen && "rotate-180")}
+            aria-hidden="true"
+          />
+        </button>
 
-        <div className="space-y-3 lg:space-y-2.5 2xl:space-y-3">
+        {isDaysOpen ? <div className="mt-3 space-y-3 lg:mt-2.5 lg:space-y-2.5 2xl:mt-3 2xl:space-y-3">
           <div className="space-y-2.5 sm:flex sm:flex-wrap sm:items-start sm:gap-2 sm:space-y-0 lg:gap-2 2xl:gap-2.5">
             <div className="flex sm:flex-none">
               <Button
@@ -300,22 +315,33 @@ export default function BeneficioForm({
           {!todosLosDias ? (
             <p className="text-xs text-text-muted lg:text-[11px] 2xl:text-xs">{copy.selectedDaysHint}</p>
           ) : null}
-        </div>
+        </div> : null}
       </section>
 
       <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
-        <div className="mb-3 flex items-start gap-3 lg:mb-2.5 lg:gap-2.5 2xl:mb-3 2xl:gap-3">
-          <div className="rounded-xl bg-primary-soft p-2 text-primary">
-            <Globe className="h-4 w-4" aria-hidden="true" />
+        <button
+          type="button"
+          onClick={() => setIsVisibilityOpen((prev) => !prev)}
+          aria-expanded={isVisibilityOpen}
+          className="flex w-full items-start justify-between gap-3 text-left"
+        >
+          <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
+            <div className="rounded-xl bg-primary-soft p-2 text-primary">
+              <Globe className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
+                Visibilidad del cupón
+              </h2>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
-              Visibilidad del cupón
-            </h2>
-          </div>
-        </div>
+          <ChevronDown
+            className={cn("mt-1 h-4 w-4 shrink-0 text-text-muted transition-transform", isVisibilityOpen && "rotate-180")}
+            aria-hidden="true"
+          />
+        </button>
 
-        <div className="flex items-center justify-between gap-4">
+        {isVisibilityOpen ? <div className="mt-3 flex items-center justify-between gap-4 lg:mt-2.5 2xl:mt-3">
           <div className="space-y-0.5">
             <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
               {esPublico ? "Público" : "Privado"}
@@ -341,22 +367,33 @@ export default function BeneficioForm({
               )}
             />
           </button>
-        </div>
+        </div> : null}
       </section>
 
       <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
-        <div className="mb-3 flex items-start gap-3 lg:mb-2.5 lg:gap-2.5 2xl:mb-3 2xl:gap-3">
-          <div className="rounded-xl bg-primary-soft p-2 text-primary">
-            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+        <button
+          type="button"
+          onClick={() => setIsConditionsOpen((prev) => !prev)}
+          aria-expanded={isConditionsOpen}
+          className="flex w-full items-start justify-between gap-3 text-left"
+        >
+          <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
+            <div className="rounded-xl bg-primary-soft p-2 text-primary">
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
+                Condiciones
+              </h2>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
-              Condiciones
-            </h2>
-          </div>
-        </div>
+          <ChevronDown
+            className={cn("mt-1 h-4 w-4 shrink-0 text-text-muted transition-transform", isConditionsOpen && "rotate-180")}
+            aria-hidden="true"
+          />
+        </button>
 
-        <div className="space-y-4 lg:space-y-3.5 2xl:space-y-4">
+        {isConditionsOpen ? <div className="mt-3 space-y-4 lg:mt-2.5 lg:space-y-3.5 2xl:mt-3 2xl:space-y-4">
           <div className="space-y-2 lg:space-y-1.5 2xl:space-y-2">
             <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
               Medios de pago aceptados
@@ -432,7 +469,7 @@ export default function BeneficioForm({
             maxLength={150}
             error={fieldErrors.condicionesExtra}
           />
-        </div>
+        </div> : null}
       </section>
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}
