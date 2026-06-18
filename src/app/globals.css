@@ -104,7 +104,7 @@
 
 @layer components {
   .landing-logo-marquee__track {
-    animation: landing-logo-marquee 32s linear infinite;
+    animation: landing-logo-marquee 100s linear infinite;
     will-change: transform;
   }
 
