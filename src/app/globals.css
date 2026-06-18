@@ -91,3 +91,42 @@
     }
   }
 }
+
+@keyframes landing-logo-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@layer components {
+  .landing-logo-marquee__track {
+    animation: landing-logo-marquee 100s linear infinite;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .landing-logo-marquee {
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .landing-logo-marquee::-webkit-scrollbar {
+      display: none;
+    }
+
+    .landing-logo-marquee__track {
+      width: 100%;
+      animation: none;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .landing-logo-marquee [data-clone="true"] {
+      display: none;
+    }
+  }
+}
