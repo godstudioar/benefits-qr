@@ -1,6 +1,7 @@
 import HowItWorks from "@/components/landing/HowItWorks";
 import LandingAudienceCtas from "@/components/landing/LandingAudienceCtas";
 import LandingHero from "@/components/landing/LandingHero";
+import LandingMerchantMarquee from "@/components/landing/LandingMerchantMarquee";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import Playbooks from "@/components/landing/Playbooks";
 import PublicBenefitsSection from "@/components/public-benefits/PublicBenefitsSection";
@@ -12,6 +13,7 @@ export default function Home() {
     <main className="relative">
       <LandingNavbar />
       <LandingHero />
+      <LandingMerchantMarquee />
       <LandingAudienceCtas />
 
       <PublicBenefitsSection />
