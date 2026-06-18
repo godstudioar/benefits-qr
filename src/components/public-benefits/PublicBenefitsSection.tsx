@@ -1,7 +1,7 @@
 import LinkButton from "@/components/ui/LinkButton";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeader from "@/components/ui/SectionHeader";
-import PublicBenefitCardCompact from "@/components/public-benefits/PublicBenefitCardCompact";
+import PublicBenefitCard from "@/components/public-benefits/PublicBenefitCard";
 import LandingLocalesMap from "@/components/public-benefits/LandingLocalesMap";
 import { getFeaturedPublicBenefits } from "@/server/services/publicBenefitsService";
 import { getTodosLocalesRaw } from "@/server/repositories/localesMapRepository";
@@ -46,7 +46,7 @@ export default async function PublicBenefitsSection() {
             <div className="flex flex-col gap-3">
               {beneficios.length > 0 ? (
                 beneficios.map((benefit) => (
-                  <PublicBenefitCardCompact key={benefit.id} benefit={benefit} />
+                  <PublicBenefitCard key={benefit.id} benefit={benefit} variant="compact" />
                 ))
               ) : (
                 <div className="rounded-2xl border border-border-default bg-surface/80 p-6 text-center text-sm text-text-muted">

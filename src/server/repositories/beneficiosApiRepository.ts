@@ -1,4 +1,4 @@
-import { EstadoReclamo, Prisma } from "@/generated/prisma/client";
+import { EstadoReclamo, MedioPago, Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 type BeneficioTxClient = Prisma.TransactionClient;
@@ -10,6 +10,10 @@ export type BeneficioEditRecord = {
   maxUsos: number | null;
   diasValidos: number[];
   esPublico: boolean;
+  mediosPago: MedioPago[];
+  esAcumulable: boolean;
+  condicionesExtra: string | null;
+  maxUsosPorCliente: number | null;
   localId: string;
 };
 
@@ -30,6 +34,10 @@ export async function createBeneficio(data: {
   maxUsos: number | null;
   diasValidos: number[];
   esPublico: boolean;
+  mediosPago: MedioPago[];
+  esAcumulable: boolean;
+  condicionesExtra: string | null;
+  maxUsosPorCliente: number | null;
   localId: string;
 }) {
   return prisma.beneficio.create({ data });
@@ -66,6 +74,10 @@ export async function findBeneficioEditByLocal(id: string, localId: string) {
       maxUsos: true,
       diasValidos: true,
       esPublico: true,
+      mediosPago: true,
+      esAcumulable: true,
+      condicionesExtra: true,
+      maxUsosPorCliente: true,
       reclamos: {
         select: {
           id: true,
@@ -111,7 +123,7 @@ export async function countBeneficioReclamosByEstados(
 export async function updateBeneficioPartial(
   tx: BeneficioTxClient,
   id: string,
-  data: Partial<Pick<BeneficioEditRecord, "descripcion" | "fechaExpiracion" | "maxUsos" | "diasValidos" | "esPublico">>,
+  data: Partial<Pick<BeneficioEditRecord, "descripcion" | "fechaExpiracion" | "maxUsos" | "diasValidos" | "esPublico" | "mediosPago" | "esAcumulable" | "condicionesExtra" | "maxUsosPorCliente">>,
 ) {
   return tx.beneficio.update({
     where: { id },

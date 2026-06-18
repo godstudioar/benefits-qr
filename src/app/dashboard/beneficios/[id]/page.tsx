@@ -1,4 +1,4 @@
-import { Download, PencilLine } from "lucide-react";
+import { Download, PencilLine, ShieldCheck } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getSessionFromCookies } from "@/lib/auth";
 import { UserType } from "@/lib/enums";
@@ -86,6 +86,47 @@ export default async function BeneficioStatsPage({
                   {beneficio.maxUsos && ` · Máx. ${beneficio.maxUsos} usos`}
                 </p>
                 <BenefitWeekdays diasValidos={beneficio.diasValidos} size="md" />
+                {(beneficio.mediosPago.length > 0 || !beneficio.esAcumulable || beneficio.condicionesExtra) && (
+                  <div className="rounded-xl border border-border-default/70 bg-surface-muted/60 px-3 py-2.5">
+                    <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                      <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                      <span>Condiciones</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {beneficio.mediosPago.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="text-xs font-bold text-text-primary">
+                            Medios de pago:
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {beneficio.mediosPago.map((medio) => {
+                              const label =
+                                medio === "EFECTIVO" ? "Efectivo" :
+                                medio === "TRANSFERENCIA" ? "Transferencia" :
+                                medio === "DEBITO" ? "Débito" :
+                                medio === "CREDITO" ? "Crédito" : medio;
+                              return (
+                                <Badge key={medio} variant="secondary" className="px-2 py-0 text-[11px]">
+                                  {label}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {!beneficio.esAcumulable && (
+                        <p className="text-xs text-text-secondary">
+                          No acumulable con otros descuentos
+                        </p>
+                      )}
+                      {beneficio.condicionesExtra && (
+                        <p className="text-xs text-text-secondary">
+                          {beneficio.condicionesExtra}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {!isDeleted ? (
