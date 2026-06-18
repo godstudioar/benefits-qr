@@ -6,6 +6,7 @@ import { UserType } from "@/lib/enums";
 import { buildOrderNumberFromReclamoId } from "@/lib/orderNumber";
 import { prisma } from "@/lib/prisma";
 import {
+  countReclamosByClienteForBeneficio,
   createClienteAnonimo,
   createReclamo,
   findBeneficioForReclamo,
@@ -14,6 +15,10 @@ import {
   findExistingReclamoPendiente,
   updateCliente,
 } from "@/server/repositories/reclamosRepository";
+
+function getEffectiveMaxUsosPorCliente(maxUsosPorCliente: number | null | undefined): number {
+  return maxUsosPorCliente ?? 1;
+}
 
 function normalizeNombreCompleto(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -137,13 +142,23 @@ async function redeemBeneficioDirectForClienteTx(
   });
 
   if (existingReclamo?.estado === EstadoReclamo.CANJEADO) {
-    return {
-      ok: true,
-      status: 200,
-      reclamoId: existingReclamo.id,
-      orderNumber: buildOrderNumberFromReclamoId(existingReclamo.id),
-      alreadyRedeemed: true,
-    };
+    const effectiveMax = getEffectiveMaxUsosPorCliente(beneficio.maxUsosPorCliente);
+    const usosCliente = await tx.reclamo.count({
+      where: {
+        beneficioId,
+        clienteId,
+        estado: { in: [EstadoReclamo.PENDIENTE, EstadoReclamo.CANJEADO] },
+      },
+    });
+    if (usosCliente >= effectiveMax) {
+      return {
+        ok: true,
+        status: 200,
+        reclamoId: existingReclamo.id,
+        orderNumber: buildOrderNumberFromReclamoId(existingReclamo.id),
+        alreadyRedeemed: true,
+      };
+    }
   }
 
   if (existingReclamo?.estado === EstadoReclamo.CANCELADO) {
@@ -276,13 +291,16 @@ export async function createAnonymousReclamoFlow(
       return { ok: true, status: 200, reclamoId: existingReclamo.id, sessionToken: null };
     }
 
-    const anyReclamo = await findExistingReclamo(beneficioId, existingClienteId);
-    if (anyReclamo?.estado === EstadoReclamo.CANJEADO) {
+    const effectiveMax = getEffectiveMaxUsosPorCliente(beneficio.maxUsosPorCliente);
+    const usosCliente = await countReclamosByClienteForBeneficio(beneficioId, existingClienteId);
+    if (usosCliente >= effectiveMax) {
       return {
         ok: false,
         status: 409,
-        error: "Ya canjeaste este cupón",
-        code: "RECLAMO_ALREADY_REDEEMED",
+        error: effectiveMax === 1
+          ? "Ya canjeaste este cupón"
+          : `Ya usaste este cupón el máximo de veces permitido (${effectiveMax})`,
+        code: usosCliente >= 1 && effectiveMax === 1 ? "RECLAMO_ALREADY_REDEEMED" : "MAX_USOS_POR_CLIENTE_REACHED",
       };
     }
 

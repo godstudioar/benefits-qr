@@ -79,3 +79,13 @@ export async function findExistingReclamoPendiente(beneficioId: string, clienteI
     where: { beneficioId, clienteId, estado: EstadoReclamo.PENDIENTE },
   });
 }
+
+export async function countReclamosByClienteForBeneficio(beneficioId: string, clienteId: string) {
+  return prisma.reclamo.count({
+    where: {
+      beneficioId,
+      clienteId,
+      estado: { in: [EstadoReclamo.PENDIENTE, EstadoReclamo.CANJEADO] },
+    },
+  });
+}
