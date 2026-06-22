@@ -1,10 +1,18 @@
 import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 
 function shortHash(data: string | Buffer): string {
   return createHash("sha1").update(data).digest("hex").slice(0, 16);
 }
+
+const getLogoUrl = unstable_cache(
+  async (id: string) =>
+    prisma.local.findUnique({ where: { id }, select: { logoUrl: true } }),
+  ["logo-url"],
+  { revalidate: 86400 }
+);
 
 export async function GET(
   req: NextRequest,
@@ -12,10 +20,7 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const local = await prisma.local.findUnique({
-    where: { id },
-    select: { logoUrl: true },
-  });
+  const local = await getLogoUrl(id);
 
   if (!local?.logoUrl) {
     return new Response(null, { status: 404 });
@@ -35,7 +40,7 @@ export async function GET(
     return new Response(buffer, {
       headers: {
         "Content-Type": mimeType,
-        "Cache-Control": "public, no-cache",
+        "Cache-Control": "public, max-age=86400, immutable",
         "ETag": etag,
       },
     });
@@ -43,6 +48,6 @@ export async function GET(
 
   return NextResponse.redirect(local.logoUrl, {
     status: 302,
-    headers: { "Cache-Control": "no-store" },
+    headers: { "Cache-Control": "public, max-age=86400, immutable" },
   });
 }

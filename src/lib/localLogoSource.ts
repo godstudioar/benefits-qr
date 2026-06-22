@@ -10,7 +10,14 @@ export function getLocalLogoDisplayUrl({ localId, logoUrl }: LocalLogoSourceInpu
     return null;
   }
 
-  const version = logoVersion(logoUrl);
+  if (logoUrl.startsWith("http://") || logoUrl.startsWith("https://")) {
+    return logoUrl;
+  }
 
-  return `/api/locales/${localId}/logo?v=${version}`;
+  if (logoUrl.startsWith("data:")) {
+    const version = logoVersion(logoUrl);
+    return `/api/locales/${localId}/logo?v=${version}`;
+  }
+
+  return null;
 }
