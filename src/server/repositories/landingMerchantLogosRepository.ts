@@ -19,6 +19,7 @@ async function _getLandingMerchantLogosRaw(limit: number): Promise<LandingMercha
       active: true,
       isTest: false,
       nombre: { not: null },
+      logoUrl: { not: null },
     },
     select: {
       id: true,
@@ -36,6 +37,6 @@ export function getLandingMerchantLogosRaw(limit: number) {
   return unstable_cache(
     async () => _getLandingMerchantLogosRaw(limit),
     ["landing-merchant-logos", String(limit)],
-    { revalidate: 300 }
+    { revalidate: 86400 }
   )();
 }

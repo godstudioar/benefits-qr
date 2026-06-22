@@ -3,7 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-const IGNORED_PREFIXES = ["/api", "/_next"];
+const IGNORED_PREFIXES = ["/api", "/_next", "/admin"];
 
 export default function PageviewTracker() {
   const pathname = usePathname();

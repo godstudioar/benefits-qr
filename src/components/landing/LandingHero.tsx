@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import LinkButton from "@/components/ui/LinkButton";
 import { QrCode, Smartphone, Store } from "lucide-react";
 import IPhoneMockup from "@/components/landing/IPhoneMockup";
@@ -86,7 +87,9 @@ export default function LandingHero() {
           </Reveal>
         </div>
 
-        <LandingMerchantMarquee className="order-2 lg:col-span-full lg:row-start-2" />
+        <Suspense fallback={<div className="order-2 lg:col-span-full lg:row-start-2 min-h-[14vh] sm:min-h-[22vh] lg:min-h-[16vh]" />}>
+          <LandingMerchantMarquee className="order-2 lg:col-span-full lg:row-start-2" />
+        </Suspense>
 
         <LandingHeroPhoneReveal className="order-3 mx-auto w-full max-w-[18rem] sm:max-w-[20rem] lg:col-start-2 lg:row-start-1 lg:mx-0 lg:max-w-none lg:self-center 2xl:justify-self-end">
           <div className="relative isolate">

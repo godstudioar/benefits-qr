@@ -14,7 +14,7 @@ function hasDisplayLogo(local: LandingMerchantLogoRaw) {
   return Boolean(getLocalLogoDisplayUrl({ localId: local.id, logoUrl: local.logoUrl }));
 }
 
-export async function getLandingMerchantLogos(limit = 12): Promise<LandingMerchantLogoItem[]> {
+export async function getLandingMerchantLogos(limit = 20): Promise<LandingMerchantLogoItem[]> {
   const locales = await getLandingMerchantLogosRaw(limit);
 
   return locales
