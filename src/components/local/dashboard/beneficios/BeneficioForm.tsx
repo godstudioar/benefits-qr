@@ -27,6 +27,7 @@ import {
   type TimeWindowDraft,
   type TimeWindowDraftMap,
 } from "./beneficioFormSchedule";
+import { validateBeneficioFormSubmission } from "./beneficioFormValidation";
 import { cn } from "@/lib/utils";
 
 export type BeneficioFormMode = "create" | "edit";
@@ -164,6 +165,18 @@ export default function BeneficioForm({
     [diasSeleccionados, timeWindowDrafts],
   );
 
+  function clearFieldError(field: (typeof FIELD_ERROR_KEYS)[number]) {
+    setFieldErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
   function handleDiaToggle(value: number) {
     setDiasValidos((prev) => {
       const nextDays = toggleSelectedWeekday(prev, value);
@@ -229,8 +242,15 @@ export default function BeneficioForm({
     setError("");
     setFieldErrors({});
 
-    if (!fechaExpiracion) {
-      setFieldErrors({ fechaExpiracion: "Seleccioná una fecha de expiración." });
+    const formValidation = validateBeneficioFormSubmission({
+      descripcion,
+      fechaExpiracion,
+      maxUsos,
+      maxUsosPorCliente,
+    });
+
+    if (!formValidation.ok) {
+      setFieldErrors({ [formValidation.field]: formValidation.message });
       return;
     }
 
@@ -263,14 +283,14 @@ export default function BeneficioForm({
       body: JSON.stringify({
         descripcion,
         fechaExpiracion,
-        maxUsos: maxUsos ? parseInt(maxUsos, 10) : null,
+        maxUsos: formValidation.parsedMaxUsos,
         diasValidos,
         ventanasHorarias: serializedWindows,
         esPublico,
         mediosPago,
         esAcumulable,
         condicionesExtra: condicionesExtra || null,
-        maxUsosPorCliente: maxUsosPorCliente ? parseInt(maxUsosPorCliente, 10) : null,
+        maxUsosPorCliente: formValidation.parsedMaxUsosPorCliente,
       }),
     });
 
@@ -295,7 +315,7 @@ export default function BeneficioForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 lg:space-y-4 2xl:space-y-5">
+    <form noValidate onSubmit={handleSubmit} className="space-y-5 lg:space-y-4 2xl:space-y-5">
       {summaryBadges && summaryBadges.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {summaryBadges.map((badge) => (
@@ -312,7 +332,10 @@ export default function BeneficioForm({
             label="Descripción"
             labelHelp={BENEFICIO_FIELD_HELP.descripcion}
             value={descripcion}
-            onChange={(event) => setDescripcion(event.target.value)}
+            onChange={(event) => {
+              setDescripcion(event.target.value);
+              clearFieldError("descripcion");
+            }}
             placeholder="Ej: 20% de descuento en todos los productos"
             maxLength={40}
             error={fieldErrors.descripcion}
@@ -324,7 +347,10 @@ export default function BeneficioForm({
           label="Fecha de expiración"
           labelHelp={BENEFICIO_FIELD_HELP.fechaExpiracion}
           value={fechaExpiracion}
-          onChange={setFechaExpiracion}
+          onChange={(value) => {
+            setFechaExpiracion(value);
+            clearFieldError("fechaExpiracion");
+          }}
           min={minDate}
           error={fieldErrors.fechaExpiracion}
           required
@@ -335,7 +361,10 @@ export default function BeneficioForm({
           labelHelp={BENEFICIO_FIELD_HELP.maxUsos}
           type="number"
           value={maxUsos}
-          onChange={(event) => setMaxUsos(event.target.value)}
+          onChange={(event) => {
+            setMaxUsos(event.target.value);
+            clearFieldError("maxUsos");
+          }}
           placeholder="Sin límite si se deja vacío"
           min="1"
           inputMode="numeric"
@@ -347,7 +376,10 @@ export default function BeneficioForm({
           labelHelp={BENEFICIO_FIELD_HELP.maxUsosPorCliente}
           type="number"
           value={maxUsosPorCliente}
-          onChange={(event) => setMaxUsosPorCliente(event.target.value)}
+          onChange={(event) => {
+            setMaxUsosPorCliente(event.target.value);
+            clearFieldError("maxUsosPorCliente");
+          }}
           placeholder="1 uso si se deja vacío"
           min="1"
           inputMode="numeric"
