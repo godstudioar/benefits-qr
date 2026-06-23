@@ -7,6 +7,7 @@ import type { MedioPago } from "@/generated/prisma/client";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import DatePicker from "@/components/ui/DatePicker";
+import FieldHelp from "@/components/ui/FieldHelp";
 import Input from "@/components/ui/Input";
 import {
   BENEFICIO_WEEKDAYS,
@@ -93,6 +94,29 @@ const DEFAULT_CONSTRAINT_COPY: Required<BeneficioFormConstraintCopy> = {
   privateDescription:
     "Este cupón no aparecerá en el directorio público. Solo accesible por link directo.",
 };
+
+const BENEFICIO_FIELD_HELP = {
+  descripcion:
+    "Es el texto corto que verá la gente cuando encuentre el cupón. Conviene que resuma el beneficio de forma clara y específica.",
+  fechaExpiracion:
+    "Define hasta qué día se puede reclamar o usar el cupón. Después de esa fecha deja de estar disponible automáticamente.",
+  maxUsos:
+    "Limita la cantidad total de veces que este cupón puede canjearse entre todas las personas. Si lo dejás vacío, no tendrá tope general.",
+  maxUsosPorCliente:
+    "Marca cuántas veces puede usarlo cada cliente. Si lo dejás vacío, cada cliente podrá usarlo una vez.",
+  diasDisponibles:
+    "Elegí si el cupón aplica todos los días o solo en días puntuales. Esto te ayuda a controlar cuándo aparece como válido.",
+  horarioPorDia:
+    "Activalo si necesitás horarios distintos por día. Solo funciona cuando seleccionaste días específicos, no para “Todos los días”.",
+  visibilidad:
+    "Un cupón público aparece en el directorio para cualquier persona. Uno privado solo se puede compartir por link directo.",
+  mediosPago:
+    "Podés dejarlo abierto a cualquier medio o restringirlo a los métodos que quieras aceptar para este beneficio.",
+  acumulable:
+    "Definí si este cupón puede combinarse con otras promociones. Si lo desactivás, el cliente deberá usarlo por separado.",
+  condicionesExtra:
+    "Usá este campo para aclarar reglas importantes, por ejemplo consumo mínimo, exclusiones o restricciones del local.",
+} as const;
 
 function getTodayDateString() {
   const today = new Date();
@@ -282,10 +306,11 @@ export default function BeneficioForm({
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:gap-3.5 2xl:gap-4">
-        <div className="sm:col-span-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-3.5 2xl:gap-4">
+        <div className="sm:col-span-2 lg:col-span-3">
           <Input
             label="Descripción"
+            labelHelp={BENEFICIO_FIELD_HELP.descripcion}
             value={descripcion}
             onChange={(event) => setDescripcion(event.target.value)}
             placeholder="Ej: 20% de descuento en todos los productos"
@@ -297,6 +322,7 @@ export default function BeneficioForm({
 
         <DatePicker
           label="Fecha de expiración"
+          labelHelp={BENEFICIO_FIELD_HELP.fechaExpiracion}
           value={fechaExpiracion}
           onChange={setFechaExpiracion}
           min={minDate}
@@ -306,6 +332,7 @@ export default function BeneficioForm({
 
         <Input
           label="Máximo de usos"
+          labelHelp={BENEFICIO_FIELD_HELP.maxUsos}
           type="number"
           value={maxUsos}
           onChange={(event) => setMaxUsos(event.target.value)}
@@ -317,6 +344,7 @@ export default function BeneficioForm({
 
         <Input
           label="Máx. usos por cliente"
+          labelHelp={BENEFICIO_FIELD_HELP.maxUsosPorCliente}
           type="number"
           value={maxUsosPorCliente}
           onChange={(event) => setMaxUsosPorCliente(event.target.value)}
@@ -328,27 +356,30 @@ export default function BeneficioForm({
       </div>
 
       <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
-        <button
-          type="button"
-          onClick={() => setIsDaysOpen((prev) => !prev)}
-          aria-expanded={isDaysOpen}
-          className="flex w-full items-start justify-between gap-3 text-left"
-        >
-          <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
-            <div className="rounded-xl bg-primary-soft p-2 text-primary">
-              <CalendarDays className="h-4 w-4" aria-hidden="true" />
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            onClick={() => setIsDaysOpen((prev) => !prev)}
+            aria-expanded={isDaysOpen}
+            className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left"
+          >
+            <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
+              <div className="rounded-xl bg-primary-soft p-2 text-primary">
+                <CalendarDays className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
+                  Días disponibles
+                </h2>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
-                Días disponibles
-              </h2>
-            </div>
-          </div>
-          <ChevronDown
-            className={cn("mt-1 h-4 w-4 shrink-0 text-text-muted transition-transform", isDaysOpen && "rotate-180")}
-            aria-hidden="true"
-          />
-        </button>
+            <ChevronDown
+              className={cn("mt-1 h-4 w-4 shrink-0 text-text-muted transition-transform", isDaysOpen && "rotate-180")}
+              aria-hidden="true"
+            />
+          </button>
+          <FieldHelp label="Días disponibles" content={BENEFICIO_FIELD_HELP.diasDisponibles} className="mt-0.5" />
+        </div>
 
         {isDaysOpen ? <div className="mt-3 space-y-3 lg:mt-2.5 lg:space-y-2.5 2xl:mt-3 2xl:space-y-3">
           <div className="space-y-2.5 sm:flex sm:flex-wrap sm:items-start sm:gap-2 sm:space-y-0 lg:gap-2 2xl:gap-2.5">
@@ -405,9 +436,12 @@ export default function BeneficioForm({
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <Clock3 className="h-4 w-4 text-primary" aria-hidden="true" />
-                  <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
-                    Horario por día
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
+                      Horario por día
+                    </p>
+                    <FieldHelp label="Horario por día" content={BENEFICIO_FIELD_HELP.horarioPorDia} />
+                  </div>
                 </div>
                   <p className="text-sm text-text-muted lg:text-[13px] 2xl:text-sm">
                     {todosLosDias
@@ -476,27 +510,30 @@ export default function BeneficioForm({
       </section>
 
       <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
-        <button
-          type="button"
-          onClick={() => setIsVisibilityOpen((prev) => !prev)}
-          aria-expanded={isVisibilityOpen}
-          className="flex w-full items-start justify-between gap-3 text-left"
-        >
-          <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
-            <div className="rounded-xl bg-primary-soft p-2 text-primary">
-              <Globe className="h-4 w-4" aria-hidden="true" />
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            onClick={() => setIsVisibilityOpen((prev) => !prev)}
+            aria-expanded={isVisibilityOpen}
+            className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left"
+          >
+            <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
+              <div className="rounded-xl bg-primary-soft p-2 text-primary">
+                <Globe className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
+                  Visibilidad del cupón
+                </h2>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
-                Visibilidad del cupón
-              </h2>
-            </div>
-          </div>
-          <ChevronDown
-            className={cn("mt-1 h-4 w-4 shrink-0 text-text-muted transition-transform", isVisibilityOpen && "rotate-180")}
-            aria-hidden="true"
-          />
-        </button>
+            <ChevronDown
+              className={cn("mt-1 h-4 w-4 shrink-0 text-text-muted transition-transform", isVisibilityOpen && "rotate-180")}
+              aria-hidden="true"
+            />
+          </button>
+          <FieldHelp label="Visibilidad del cupón" content={BENEFICIO_FIELD_HELP.visibilidad} className="mt-0.5" />
+        </div>
 
         {isVisibilityOpen ? <div className="mt-3 flex items-center justify-between gap-4 lg:mt-2.5 2xl:mt-3">
           <div className="space-y-0.5">
@@ -528,33 +565,39 @@ export default function BeneficioForm({
       </section>
 
       <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
-        <button
-          type="button"
-          onClick={() => setIsConditionsOpen((prev) => !prev)}
-          aria-expanded={isConditionsOpen}
-          className="flex w-full items-start justify-between gap-3 text-left"
-        >
-          <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
-            <div className="rounded-xl bg-primary-soft p-2 text-primary">
-              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            onClick={() => setIsConditionsOpen((prev) => !prev)}
+            aria-expanded={isConditionsOpen}
+            className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left"
+          >
+            <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
+              <div className="rounded-xl bg-primary-soft p-2 text-primary">
+                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
+                  Condiciones
+                </h2>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
-                Condiciones
-              </h2>
-            </div>
-          </div>
-          <ChevronDown
-            className={cn("mt-1 h-4 w-4 shrink-0 text-text-muted transition-transform", isConditionsOpen && "rotate-180")}
-            aria-hidden="true"
-          />
-        </button>
+            <ChevronDown
+              className={cn("mt-1 h-4 w-4 shrink-0 text-text-muted transition-transform", isConditionsOpen && "rotate-180")}
+              aria-hidden="true"
+            />
+          </button>
+          <FieldHelp label="Condiciones" content={BENEFICIO_FIELD_HELP.condicionesExtra} className="mt-0.5" />
+        </div>
 
         {isConditionsOpen ? <div className="mt-3 space-y-4 lg:mt-2.5 lg:space-y-3.5 2xl:mt-3 2xl:space-y-4">
           <div className="space-y-2 lg:space-y-1.5 2xl:space-y-2">
-            <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
-              Medios de pago aceptados
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
+                Medios de pago aceptados
+              </p>
+              <FieldHelp label="Medios de pago aceptados" content={BENEFICIO_FIELD_HELP.mediosPago} />
+            </div>
             <div className="flex flex-wrap gap-2 lg:gap-2 2xl:gap-2.5">
               <Button
                 type="button"
@@ -590,9 +633,12 @@ export default function BeneficioForm({
 
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
-              <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
-                {esAcumulable ? "Acumulable" : "No acumulable"}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
+                  {esAcumulable ? "Acumulable" : "No acumulable"}
+                </p>
+                <FieldHelp label="Acumulable" content={BENEFICIO_FIELD_HELP.acumulable} />
+              </div>
               <p className="text-sm text-text-muted lg:text-[13px] 2xl:text-sm">
                 {esAcumulable
                   ? "Se puede combinar con otros descuentos o promociones."
@@ -620,6 +666,7 @@ export default function BeneficioForm({
 
           <Input
             label="Condiciones adicionales"
+            labelHelp={BENEFICIO_FIELD_HELP.condicionesExtra}
             value={condicionesExtra ?? ""}
             onChange={(event) => setCondicionesExtra(event.target.value)}
             placeholder="Ej: Válido solo para consumo en el local"

@@ -3,14 +3,16 @@
 import { format, parse } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronDownIcon } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { type ReactNode, useId, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import Calendar from "@/components/ui/Calendar";
+import FieldHelp from "@/components/ui/FieldHelp";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { cn } from "@/lib/utils";
 
 interface DatePickerProps {
   label?: string;
+  labelHelp?: ReactNode;
   value: string;
   onChange: (value: string) => void;
   min?: string;
@@ -38,6 +40,7 @@ function formatDisplayDate(value: string) {
 
 export default function DatePicker({
   label,
+  labelHelp,
   value,
   onChange,
   min,
@@ -57,10 +60,13 @@ export default function DatePicker({
   return (
     <div className={cn("w-full", className)}>
       {label ? (
-        <label htmlFor={inputId} className="mb-1 block text-sm font-medium text-text-primary">
-          {label}
-          {required ? <span className="ml-1 text-danger">*</span> : null}
-        </label>
+        <div className="mb-1 flex items-center gap-1.5">
+          <label htmlFor={inputId} className="block text-sm font-medium text-text-primary">
+            {label}
+            {required ? <span className="ml-1 text-danger">*</span> : null}
+          </label>
+          {labelHelp ? <FieldHelp label={label} content={labelHelp} /> : null}
+        </div>
       ) : null}
 
       <Popover
