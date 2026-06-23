@@ -13,7 +13,7 @@ import LinkButton from "@/components/ui/LinkButton";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { formatDateAR } from "@/lib/dates";
-import { sortDiasValidos } from "@/lib/beneficioSchedule";
+import { normalizeBeneficioTimeWindows, sortDiasValidos } from "@/lib/beneficioSchedule";
 import { evaluateBeneficioState } from "@/lib/couponStatus";
 import { DIRECT_QR_FLOW } from "@/lib/flows";
 import { getBeneficioAvailabilityPresentation } from "@/lib/statusPresentation";
@@ -50,6 +50,7 @@ export default async function BeneficioPublicoPage({
       fechaExpiracion: true,
       maxUsos: true,
       diasValidos: true,
+      ventanasHorarias: true,
       mediosPago: true,
       esAcumulable: true,
       condicionesExtra: true,
@@ -79,12 +80,14 @@ export default async function BeneficioPublicoPage({
   }
 
   const diasValidos: number[] = beneficio.diasValidos as number[];
+  const normalizedWindows = normalizeBeneficioTimeWindows(beneficio.ventanasHorarias, diasValidos);
   const beneficioState = evaluateBeneficioState({
     fechaExpiracion: beneficio.fechaExpiracion,
     deletedAt: null,
     maxUsos: beneficio.maxUsos,
     canjeados: beneficio.reclamos.length,
     diasValidos,
+    ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
   });
   const diasValidosOrdenados = sortDiasValidos(diasValidos);
   const localName = beneficio.local.nombre ?? "Local adherido";
@@ -94,7 +97,9 @@ export default async function BeneficioPublicoPage({
   const availability = getBeneficioAvailabilityPresentation({
     status: beneficioState.status,
     isWrongDay: beneficioState.isWrongDay,
+    isOutsideTimeWindow: beneficioState.isOutsideTimeWindow,
     diasValidos,
+    ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
   });
 
   const isDirectFlow = flow === DIRECT_QR_FLOW;
@@ -151,10 +156,10 @@ export default async function BeneficioPublicoPage({
         <Reveal delay={0.06} y={16} amount={0.35}>
           <Card className={`overflow-hidden border-surface/80 bg-surface/90 ${SHADOW.focalBase} sm:bg-surface/80 sm:backdrop-blur-md`}>
             <div className="space-y-5 p-6 sm:p-8 lg:space-y-4 lg:p-6 2xl:space-y-5 2xl:p-8">
-              <div className="relative pt-8 sm:pt-6">
+              <div className="relative pt-8 sm:pt-6 lg:pt-8 2xl:pt-6">
                 <Badge
                   variant={availability.badgeVariant}
-                  className="absolute top-0 right-0 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] sm:px-3 sm:py-1 sm:text-[11px] sm:tracking-[0.14em]"
+                  className="absolute top-0 right-0 lg:top-1 lg:right-1 2xl:top-0 2xl:right-0 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] sm:px-3 sm:py-1 sm:text-[11px] sm:tracking-[0.14em]"
                 >
                   {availability.badgeLabel}
                 </Badge>

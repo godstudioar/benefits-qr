@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { normalizeBeneficioTimeWindows } from "@/lib/beneficioSchedule";
 import { QR_EXPIRY_MINUTES } from "@/lib/constants";
 import { buildQRPayload, generateQRDataURL } from "@/lib/qr";
 import { evaluateReclamoState, getCouponBlockError } from "@/lib/couponStatus";
@@ -32,6 +33,14 @@ type CanjeResult =
     }
   | ServiceError;
 
+function getNormalizedVentanasHorarias(
+  ventanasHorarias: unknown,
+  diasValidos: number[],
+) {
+  const normalized = normalizeBeneficioTimeWindows(ventanasHorarias, diasValidos);
+  return normalized.ok ? normalized.value : null;
+}
+
 export async function generateReclamoQr(
   reclamoId: string,
   clienteId: string
@@ -49,12 +58,21 @@ export async function generateReclamoQr(
     maxUsos: reclamo.beneficio.maxUsos,
     canjeados: reclamo.beneficio._count.reclamos,
     diasValidos: reclamo.beneficio.diasValidos as number[],
+    ventanasHorarias: getNormalizedVentanasHorarias(
+      reclamo.beneficio.ventanasHorarias,
+      reclamo.beneficio.diasValidos as number[],
+    ),
   });
+  const ventanasHorarias = getNormalizedVentanasHorarias(
+    reclamo.beneficio.ventanasHorarias,
+    reclamo.beneficio.diasValidos as number[],
+  );
 
   if (!reclamoState.canGenerateQr) {
     const error = getCouponBlockError(reclamoState.blockReason, {
       diasValidos: reclamo.beneficio.diasValidos as number[],
       context: "qr",
+      ventanasHorarias,
     });
 
     return {
@@ -106,12 +124,21 @@ export async function canjearReclamo(
     maxUsos: reclamo.beneficio.maxUsos,
     canjeados: reclamo.beneficio._count.reclamos,
     diasValidos: reclamo.beneficio.diasValidos as number[],
+    ventanasHorarias: getNormalizedVentanasHorarias(
+      reclamo.beneficio.ventanasHorarias,
+      reclamo.beneficio.diasValidos as number[],
+    ),
   });
+  const ventanasHorarias = getNormalizedVentanasHorarias(
+    reclamo.beneficio.ventanasHorarias,
+    reclamo.beneficio.diasValidos as number[],
+  );
 
   if (!reclamoState.canRedeem) {
     const error = getCouponBlockError(reclamoState.blockReason, {
       diasValidos: reclamo.beneficio.diasValidos as number[],
       context: "redeem",
+      ventanasHorarias,
     });
 
     return {

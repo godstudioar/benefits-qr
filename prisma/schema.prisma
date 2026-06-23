@@ -48,6 +48,7 @@ model Beneficio {
   fechaExpiracion DateTime
   maxUsos         Int?
   diasValidos     Int[]     @default([])
+  ventanasHorarias Json?
   esPublico         Boolean     @default(false)
   mediosPago        MedioPago[] @default([])
   esAcumulable      Boolean     @default(true)

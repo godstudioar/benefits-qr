@@ -9,6 +9,7 @@ export type BeneficioEditRecord = {
   fechaExpiracion: Date;
   maxUsos: number | null;
   diasValidos: number[];
+  ventanasHorarias: Prisma.JsonValue | null;
   esPublico: boolean;
   mediosPago: MedioPago[];
   esAcumulable: boolean;
@@ -33,6 +34,7 @@ export async function createBeneficio(data: {
   fechaExpiracion: Date;
   maxUsos: number | null;
   diasValidos: number[];
+  ventanasHorarias: Prisma.JsonValue | null;
   esPublico: boolean;
   mediosPago: MedioPago[];
   esAcumulable: boolean;
@@ -40,7 +42,12 @@ export async function createBeneficio(data: {
   maxUsosPorCliente: number | null;
   localId: string;
 }) {
-  return prisma.beneficio.create({ data });
+  return prisma.beneficio.create({
+    data: {
+      ...data,
+      ventanasHorarias: data.ventanasHorarias ?? Prisma.DbNull,
+    },
+  });
 }
 
 export async function findBeneficioPublicById(id: string) {
@@ -73,6 +80,7 @@ export async function findBeneficioEditByLocal(id: string, localId: string) {
       fechaExpiracion: true,
       maxUsos: true,
       diasValidos: true,
+      ventanasHorarias: true,
       esPublico: true,
       mediosPago: true,
       esAcumulable: true,
@@ -101,6 +109,7 @@ export async function findBeneficioOwnedByLocalForUpdate(
       fechaExpiracion: true,
       maxUsos: true,
       diasValidos: true,
+      ventanasHorarias: true,
       esPublico: true,
       localId: true,
     },
@@ -123,11 +132,18 @@ export async function countBeneficioReclamosByEstados(
 export async function updateBeneficioPartial(
   tx: BeneficioTxClient,
   id: string,
-  data: Partial<Pick<BeneficioEditRecord, "descripcion" | "fechaExpiracion" | "maxUsos" | "diasValidos" | "esPublico" | "mediosPago" | "esAcumulable" | "condicionesExtra" | "maxUsosPorCliente">>,
+  data: Partial<Pick<BeneficioEditRecord, "descripcion" | "fechaExpiracion" | "maxUsos" | "diasValidos" | "ventanasHorarias" | "esPublico" | "mediosPago" | "esAcumulable" | "condicionesExtra" | "maxUsosPorCliente">>,
 ) {
+  const { ventanasHorarias, ...restData } = data;
+
   return tx.beneficio.update({
     where: { id },
-    data,
+    data: {
+      ...restData,
+      ...(ventanasHorarias !== undefined
+        ? { ventanasHorarias: ventanasHorarias ?? Prisma.DbNull }
+        : {}),
+    },
   });
 }
 

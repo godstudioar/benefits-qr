@@ -24,6 +24,7 @@ export type ReclamoRow = {
   beneficioFechaExpiracion: Date;
   beneficioDeletedAt: Date | null;
   beneficioDiasValidos: number[];
+  beneficioVentanasHorarias: Prisma.JsonValue | null;
   beneficioMaxUsos: number | null;
   beneficioCanjeados: number;
   localNombre: string | null;
@@ -144,6 +145,7 @@ export async function getMisBeneficiosRows(
       b."fechaExpiracion"     AS "beneficioFechaExpiracion",
       b."deletedAt"           AS "beneficioDeletedAt",
       b."diasValidos"         AS "beneficioDiasValidos",
+      b."ventanasHorarias"    AS "beneficioVentanasHorarias",
       b."maxUsos"             AS "beneficioMaxUsos",
       rs."beneficioCanjeados",
       l.nombre                AS "localNombre",
@@ -192,6 +194,7 @@ export async function getMisBeneficioRow(
       b."fechaExpiracion"     AS "beneficioFechaExpiracion",
       b."deletedAt"           AS "beneficioDeletedAt",
       b."diasValidos"         AS "beneficioDiasValidos",
+      b."ventanasHorarias"    AS "beneficioVentanasHorarias",
       b."maxUsos"             AS "beneficioMaxUsos",
       (
         SELECT COUNT(*)::int

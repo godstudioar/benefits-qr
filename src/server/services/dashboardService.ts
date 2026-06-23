@@ -2,6 +2,7 @@ import {
   getDashboardRaw,
   type DashboardFiltersInput,
 } from "@/server/repositories/dashboardRepository";
+import { normalizeBeneficioTimeWindows, type BeneficioTimeWindows } from "@/lib/beneficioSchedule";
 import { evaluateBeneficioState, type BeneficioEffectiveStatus } from "@/lib/couponStatus";
 import { parseRawDbTimestamp } from "@/lib/dates";
 
@@ -13,6 +14,7 @@ export type BeneficioRow = {
   fechaExpiracion: Date;
   maxUsos: number | null;
   diasValidos: number[];
+  ventanasHorarias: BeneficioTimeWindows | null;
   totalReclamos: number;
   canjeados: number;
   effectiveStatus: BeneficioEffectiveStatus;
@@ -39,17 +41,20 @@ export async function getDashboardPageData(
   const beneficios: BeneficioRow[] = (raw.beneficios ?? []).map((b) => {
     const fechaExpiracion = parseRawDbTimestamp(b.fechaExpiracion);
     const deletedAt = b.deletedAt ? parseRawDbTimestamp(b.deletedAt) : null;
+    const normalizedWindows = normalizeBeneficioTimeWindows(b.ventanasHorarias, b.diasValidos);
     const beneficioState = evaluateBeneficioState({
       fechaExpiracion,
       deletedAt,
       maxUsos: b.maxUsos,
       canjeados: b.canjeados,
       diasValidos: b.diasValidos,
+      ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
     });
 
     return {
       ...b,
       fechaExpiracion,
+      ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
       effectiveStatus: beneficioState.status,
     };
   });

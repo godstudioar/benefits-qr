@@ -11,7 +11,9 @@ export async function findBeneficioForReclamo(beneficioId: string) {
         active: true,
       },
     },
-    include: { reclamos: { where: { estado: EstadoReclamo.CANJEADO }, select: { id: true } } },
+    include: {
+      reclamos: { where: { estado: EstadoReclamo.CANJEADO }, select: { id: true } },
+    },
   });
 }
 

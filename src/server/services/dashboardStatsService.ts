@@ -3,6 +3,7 @@ import {
   type TopCuponRaw,
   type TrendDay,
 } from "@/server/repositories/dashboardStatsRepository";
+import { normalizeBeneficioTimeWindows } from "@/lib/beneficioSchedule";
 import { evaluateBeneficioState } from "@/lib/couponStatus";
 import { parseRawDbTimestamp } from "@/lib/dates";
 import { getBeneficioStatusPresentation } from "@/lib/statusPresentation";
@@ -60,12 +61,14 @@ function formatAvgRedeemTime(seconds: number | null | undefined): string {
 }
 
 function mapTopCupon(raw: TopCuponRaw): TopCupon {
+  const normalizedWindows = normalizeBeneficioTimeWindows(raw.ventanasHorarias, raw.diasValidos);
   const beneficioState = evaluateBeneficioState({
     fechaExpiracion: parseRawDbTimestamp(raw.fechaExpiracion),
     deletedAt: raw.deletedAt ? parseRawDbTimestamp(raw.deletedAt) : null,
     maxUsos: raw.maxUsos,
     canjeados: raw.canjeados,
     diasValidos: raw.diasValidos,
+    ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
   });
 
   const status = getBeneficioStatusPresentation(beneficioState.status);

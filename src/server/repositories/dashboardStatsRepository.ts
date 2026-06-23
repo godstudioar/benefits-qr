@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 
 export type TrendDay = {
   date: string;
@@ -13,6 +14,7 @@ export type TopCuponRaw = {
   maxUsos: number | null;
   deletedAt: string | null;
   diasValidos: number[];
+  ventanasHorarias: Prisma.JsonValue | null;
   totalReclamos: number;
   canjeados: number;
   tasa: number;
@@ -46,7 +48,7 @@ export async function getDashboardStatsRaw(localId: string): Promise<DashboardSt
   const [raw] = await prisma.$queryRaw<[DashboardStatsRaw]>`
     WITH
       local_beneficios AS (
-        SELECT id, descripcion, "fechaExpiracion", "maxUsos", "deletedAt", "diasValidos"
+        SELECT id, descripcion, "fechaExpiracion", "maxUsos", "deletedAt", "diasValidos", "ventanasHorarias"
         FROM "Beneficio"
         WHERE "localId" = ${localId}
       ),
@@ -105,6 +107,7 @@ export async function getDashboardStatsRaw(localId: string): Promise<DashboardSt
           b."maxUsos",
           b."deletedAt",
           b."diasValidos",
+          b."ventanasHorarias",
           br."totalReclamos",
           br.canjeados,
           CASE
@@ -190,6 +193,7 @@ export async function getDashboardStatsRaw(localId: string): Promise<DashboardSt
               'maxUsos', tc."maxUsos",
               'deletedAt', tc."deletedAt",
               'diasValidos', tc."diasValidos",
+              'ventanasHorarias', tc."ventanasHorarias",
               'totalReclamos', tc."totalReclamos",
               'canjeados', tc.canjeados,
               'tasa', tc.tasa

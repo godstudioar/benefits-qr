@@ -5,6 +5,7 @@ import {
   ReclamoEffectiveStatus,
   type ReclamoEffectiveStatus as ReclamoStatus,
 } from "@/lib/couponStatus";
+import type { BeneficioTimeWindows } from "@/lib/beneficioSchedule";
 import type { SemanticVisualVariant } from "@/components/ui/buttonStyles";
 import { CouponBlockReason } from "@/lib/couponStatus";
 
@@ -71,11 +72,17 @@ export function getBeneficioStatusPresentation(status: BeneficioStatus): Benefic
 export function getBeneficioAvailabilityPresentation({
   status,
   isWrongDay,
+  isOutsideTimeWindow,
   diasValidos,
+  ventanasHorarias = null,
+  referenceDate,
 }: {
   status: BeneficioStatus;
   isWrongDay: boolean;
+  isOutsideTimeWindow?: boolean;
   diasValidos: number[];
+  ventanasHorarias?: BeneficioTimeWindows | null;
+  referenceDate?: Date;
 }): BeneficioAvailabilityPresentation {
   if (status === BeneficioEffectiveStatus.ELIMINADO) {
     return {
@@ -111,6 +118,18 @@ export function getBeneficioAvailabilityPresentation({
       message: getCouponBlockMessage(CouponBlockReason.BENEFICIO_INVALID_DAY, {
         diasValidos,
         context: "claim",
+      }),
+      isAvailable: true,
+    };
+  }
+
+  if (isOutsideTimeWindow) {
+    return {
+      badgeVariant: "warning",
+      badgeLabel: "Disponible más tarde",
+      message: getCouponBlockMessage(CouponBlockReason.BENEFICIO_OUTSIDE_TIME_WINDOW, {
+        ventanasHorarias,
+        referenceDate,
       }),
       isAvailable: true,
     };

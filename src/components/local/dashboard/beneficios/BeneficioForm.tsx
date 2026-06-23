@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronDown, Globe, ShieldCheck } from "lucide-react";
+import { CalendarDays, ChevronDown, Clock3, Globe, ShieldCheck } from "lucide-react";
 import type { MedioPago } from "@/generated/prisma/client";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -10,9 +10,22 @@ import DatePicker from "@/components/ui/DatePicker";
 import Input from "@/components/ui/Input";
 import {
   BENEFICIO_WEEKDAYS,
+  type BeneficioTimeWindows,
   formatDiasValidosSentence,
+  getDiaLabel,
+  hasBeneficioTimeWindows,
   sortDiasValidos,
 } from "@/lib/beneficioSchedule";
+import {
+  createDefaultWindowDraft,
+  createWindowDraftMap,
+  serializeWindowDrafts,
+  syncWindowDrafts,
+  toggleSelectedWeekday,
+  validateTimeWindowDrafts,
+  type TimeWindowDraft,
+  type TimeWindowDraftMap,
+} from "./beneficioFormSchedule";
 import { cn } from "@/lib/utils";
 
 export type BeneficioFormMode = "create" | "edit";
@@ -22,6 +35,7 @@ export type BeneficioFormInitialData = {
   fechaExpiracion?: string;
   maxUsos?: number | null;
   diasValidos?: number[];
+  ventanasHorarias?: BeneficioTimeWindows | null;
   esPublico?: boolean;
   mediosPago?: MedioPago[];
   esAcumulable?: boolean;
@@ -63,7 +77,7 @@ const MEDIOS_PAGO_OPTIONS: { value: MedioPago; label: string }[] = [
   { value: "CREDITO", label: "Crédito" },
 ];
 
-const FIELD_ERROR_KEYS = ["descripcion", "fechaExpiracion", "maxUsos", "condicionesExtra", "maxUsosPorCliente"] as const;
+const FIELD_ERROR_KEYS = ["descripcion", "fechaExpiracion", "maxUsos", "condicionesExtra", "maxUsosPorCliente", "ventanasHorarias"] as const;
 
 function isFieldErrorKey(value: string): value is (typeof FIELD_ERROR_KEYS)[number] {
   return FIELD_ERROR_KEYS.includes(value as (typeof FIELD_ERROR_KEYS)[number]);
@@ -101,6 +115,10 @@ export default function BeneficioForm({
   const [fechaExpiracion, setFechaExpiracion] = useState(initialData?.fechaExpiracion ?? "");
   const [maxUsos, setMaxUsos] = useState(initialData?.maxUsos?.toString() ?? "");
   const [diasValidos, setDiasValidos] = useState<number[]>(initialData?.diasValidos ?? []);
+  const [useTimeWindows, setUseTimeWindows] = useState(hasBeneficioTimeWindows(initialData?.ventanasHorarias));
+  const [timeWindowDrafts, setTimeWindowDrafts] = useState<TimeWindowDraftMap>(() =>
+    createWindowDraftMap(initialData?.ventanasHorarias),
+  );
   const [esPublico, setEsPublico] = useState(initialData?.esPublico ?? false);
   const [mediosPago, setMediosPago] = useState<MedioPago[]>(initialData?.mediosPago ?? []);
   const [esAcumulable, setEsAcumulable] = useState(initialData?.esAcumulable ?? true);
@@ -117,19 +135,59 @@ export default function BeneficioForm({
   const todosLosDias = diasValidos.length === 0;
 
   const diasSeleccionados = useMemo(() => sortDiasValidos(diasValidos), [diasValidos]);
+  const selectedDaysWindowDrafts = useMemo(
+    () => diasSeleccionados.map((day) => ({ day, draft: timeWindowDrafts[day] ?? createDefaultWindowDraft() })),
+    [diasSeleccionados, timeWindowDrafts],
+  );
 
   function handleDiaToggle(value: number) {
     setDiasValidos((prev) => {
-      if (prev.length === 0) {
-        return [value];
+      const nextDays = toggleSelectedWeekday(prev, value);
+
+      setTimeWindowDrafts((current) => syncWindowDrafts(nextDays, current));
+
+      if (nextDays.length === 0) {
+        setUseTimeWindows(false);
       }
 
-      if (prev.includes(value)) {
-        const next = prev.filter((day) => day !== value);
-        return next.length === 0 ? [] : next;
+      return nextDays;
+    });
+  }
+
+  function handleEnableTimeWindows(enabled: boolean) {
+    setUseTimeWindows(enabled);
+    setFieldErrors((prev) => {
+      if (!prev.ventanasHorarias) {
+        return prev;
       }
 
-      return [...prev, value];
+      const next = { ...prev };
+      delete next.ventanasHorarias;
+      return next;
+    });
+
+    if (enabled) {
+      setTimeWindowDrafts((current) => syncWindowDrafts(diasSeleccionados, current));
+    }
+  }
+
+  function handleWindowDraftChange(day: number, field: keyof TimeWindowDraft, value: string) {
+    setTimeWindowDrafts((prev) => ({
+      ...prev,
+      [day]: {
+        ...(prev[day] ?? createDefaultWindowDraft()),
+        [field]: value,
+      },
+    }));
+
+    setFieldErrors((prev) => {
+      if (!prev.ventanasHorarias) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next.ventanasHorarias;
+      return next;
     });
   }
 
@@ -152,6 +210,27 @@ export default function BeneficioForm({
       return;
     }
 
+    if (useTimeWindows) {
+      if (todosLosDias || diasSeleccionados.length === 0) {
+        setFieldErrors({ ventanasHorarias: "Seleccioná días específicos antes de configurar un horario." });
+        return;
+      }
+
+      const timeWindowError = validateTimeWindowDrafts(diasSeleccionados, timeWindowDrafts);
+
+      if (timeWindowError) {
+        setFieldErrors({ ventanasHorarias: timeWindowError });
+        return;
+      }
+    }
+
+    const serializedWindows = useTimeWindows ? serializeWindowDrafts(diasSeleccionados, timeWindowDrafts) : null;
+
+    if (useTimeWindows && !serializedWindows) {
+      setFieldErrors({ ventanasHorarias: "No pudimos interpretar el horario configurado. Revisá los valores cargados." });
+      return;
+    }
+
     setLoading(true);
 
     const response = await fetch(submitConfig.endpoint, {
@@ -162,6 +241,7 @@ export default function BeneficioForm({
         fechaExpiracion,
         maxUsos: maxUsos ? parseInt(maxUsos, 10) : null,
         diasValidos,
+        ventanasHorarias: serializedWindows,
         esPublico,
         mediosPago,
         esAcumulable,
@@ -277,7 +357,11 @@ export default function BeneficioForm({
                 type="button"
                 variant={todosLosDias ? "primary" : "secondary"}
                 size="sm"
-                onClick={() => setDiasValidos([])}
+                onClick={() => {
+                  setDiasValidos([]);
+                  setUseTimeWindows(false);
+                  setTimeWindowDrafts({});
+                }}
                 className="w-full sm:w-auto"
               >
                 Todos los días
@@ -315,6 +399,79 @@ export default function BeneficioForm({
           {!todosLosDias ? (
             <p className="text-xs text-text-muted lg:text-[11px] 2xl:text-xs">{copy.selectedDaysHint}</p>
           ) : null}
+
+          <div className="rounded-2xl border border-border-default/70 bg-surface/80 p-3 lg:p-2.5 2xl:p-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Clock3 className="h-4 w-4 text-primary" aria-hidden="true" />
+                  <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
+                    Horario por día
+                  </p>
+                </div>
+                  <p className="text-sm text-text-muted lg:text-[13px] 2xl:text-sm">
+                    {todosLosDias
+                      ? "Para cargar un horario, primero elegí los días puntuales en los que querés que aplique el cupón."
+                      : "Definí desde qué hora hasta qué hora puede canjearse el cupón en cada día elegido."}
+                  </p>
+                </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={useTimeWindows}
+                disabled={todosLosDias}
+                onClick={() => handleEnableTimeWindows(!useTimeWindows)}
+                className={cn(
+                  "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  useTimeWindows ? "bg-primary" : "bg-border-default",
+                )}
+              >
+                <span
+                  className={cn(
+                    "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform duration-200",
+                    useTimeWindows ? "translate-x-5" : "translate-x-0",
+                  )}
+                />
+              </button>
+            </div>
+
+            {useTimeWindows && !todosLosDias ? (
+              <div className="mt-3 space-y-3 lg:mt-2.5 lg:space-y-2.5 2xl:mt-3 2xl:space-y-3">
+                {selectedDaysWindowDrafts.map(({ day, draft }) => (
+                  <div key={day} className="grid gap-3 rounded-xl border border-border-default/60 bg-surface px-3 py-3 sm:grid-cols-[minmax(0,1fr)_140px_140px] sm:items-end lg:px-3 lg:py-2.5 2xl:px-3 2xl:py-3">
+                    <div>
+                      <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
+                        {getDiaLabel(day, "full")}
+                      </p>
+                      <p className="text-xs text-text-muted lg:text-[11px] 2xl:text-xs">
+                        Si el cierre pasa la medianoche, cargá una hora de fin menor a la de inicio.
+                      </p>
+                    </div>
+
+                    <Input
+                      label="Desde"
+                      type="time"
+                      value={draft.start}
+                      onChange={(event) => handleWindowDraftChange(day, "start", event.target.value)}
+                      step={60}
+                    />
+
+                    <Input
+                      label="Hasta"
+                      type="time"
+                      value={draft.end}
+                      onChange={(event) => handleWindowDraftChange(day, "end", event.target.value)}
+                      step={60}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {fieldErrors.ventanasHorarias ? (
+              <p className="mt-2 text-xs text-danger lg:text-[11px] 2xl:text-xs">{fieldErrors.ventanasHorarias}</p>
+            ) : null}
+          </div>
         </div> : null}
       </section>
 
