@@ -32,6 +32,14 @@
       "sessions": 89,
       "memories": 91,
       "prompts": 44
+    },
+    {
+      "id": "1339ba8c",
+      "created_by": "octavio",
+      "created_at": "2026-06-24T15:22:39Z",
+      "sessions": 46,
+      "memories": 138,
+      "prompts": 98
     }
   ]
 }
