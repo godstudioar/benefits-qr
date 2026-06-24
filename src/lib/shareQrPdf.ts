@@ -140,7 +140,11 @@ async function renderPageBackgroundDataUrl(opts: PageBackgroundOpts): Promise<st
   return canvas.toDataURL("image/png");
 }
 
-export async function downloadShareQrPdf(url: string, size: ShareQrPdfSize) {
+export async function downloadShareQrPdf(
+  url: string,
+  size: ShareQrPdfSize,
+  ctaText = "Escaneá para canjear tu beneficio"
+) {
   const selectedSize = getPdfSizeOption(size);
 
   const qrSizeMm = selectedSize.qrSizeMm;
@@ -212,7 +216,6 @@ export async function downloadShareQrPdf(url: string, size: ShareQrPdfSize) {
     color: rgb(1, 1, 1),
   });
 
-  const ctaText = "Escaneá para canjear tu beneficio";
   const ctaSize = 10;
   const ctaFont = await pdf.embedFont("Helvetica");
   const ctaWidth = ctaFont.widthOfTextAtSize(ctaText, ctaSize);

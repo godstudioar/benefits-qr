@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import DashboardFilters from "@/components/local/dashboard/DashboardFilters";
+import LocalQrActions from "@/components/local/dashboard/LocalQrActions";
 import DashboardRefreshButton from "@/components/local/dashboard/DashboardRefreshButton";
 import ShareButtons from "@/components/local/dashboard/ShareButtons";
 import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
@@ -95,6 +96,7 @@ export default async function DashboardPage({
     localId: local.id,
     logoUrl: local.logoUrl,
   });
+  const localShareUrl = `${appUrl}/local/${local.id}`;
 
   return (
     <main className="mx-auto max-w-5xl px-4 pt-6 pb-32 sm:px-6 sm:pt-8 sm:pb-16 lg:max-w-4xl lg:pt-7 lg:pb-14 2xl:max-w-5xl 2xl:pt-8 2xl:pb-16">
@@ -133,6 +135,15 @@ export default async function DashboardPage({
                 </Badge>
               </div>
             )}
+          </div>
+          <div className="mt-4 flex flex-col gap-2 border-t border-border-default/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-text-primary">QR permanente del local</p>
+              <p className="text-xs text-text-muted">
+                Imprimí un solo QR para la página de tu local y dejá que el cliente elija cualquier cupón activo.
+              </p>
+            </div>
+            <LocalQrActions url={localShareUrl} localName={localName} />
           </div>
         </div>
       </Reveal>
