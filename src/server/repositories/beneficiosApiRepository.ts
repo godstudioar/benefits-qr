@@ -39,6 +39,7 @@ export async function createBeneficio(data: {
   condicionesExtra: string | null;
   maxUsosPorCliente: number | null;
   localId: string;
+  eventoId?: string | null;
 }) {
   return prisma.beneficio.create({ data });
 }

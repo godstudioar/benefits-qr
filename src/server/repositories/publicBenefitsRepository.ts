@@ -149,6 +149,7 @@ async function _getPublicBenefitsCatalogRaw(
       LEFT JOIN beneficio_stats_cte bs ON bs."beneficioId" = b.id
       WHERE b."esPublico" = true
         AND b."deletedAt" IS NULL
+        AND b."eventoId" IS NULL
         AND l."isTest" = false
         AND l."active" = true
         ${nombreFilter}
@@ -281,6 +282,7 @@ export async function getFeaturedPublicBenefitsRaw(limit: number): Promise<Publi
       LEFT JOIN beneficio_stats_cte bs ON bs."beneficioId" = b.id
       WHERE b."esPublico" = true
         AND b."deletedAt" IS NULL
+        AND b."eventoId" IS NULL
         AND l."isTest" = false
         AND l."active" = true
     ),
@@ -375,6 +377,7 @@ async function _getFilteredLocalesForPublicBenefitsRaw(
       LEFT JOIN beneficio_stats_cte bs ON bs."beneficioId" = b.id
       WHERE b."esPublico" = true
         AND b."deletedAt" IS NULL
+        AND b."eventoId" IS NULL
         AND l.lat IS NOT NULL
         AND l.lng IS NOT NULL
         AND l."isTest" = false

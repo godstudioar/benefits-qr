@@ -8,6 +8,8 @@ import { getAdminCredentials, getAdminSessionFromCookies } from "@/lib/adminAuth
 import { getAdminDashboardData } from "@/server/services/adminDashboardService";
 import TrendSparkline from "@/components/local/dashboard/stats/TrendSparkline";
 import AdminLoginForm from "./AdminLoginForm";
+import AdminEventosSection from "./AdminEventosSection";
+import { listAllEventos } from "@/server/services/eventosService";
 
 export default async function AdminPage() {
   const credentials = getAdminCredentials();
@@ -31,7 +33,10 @@ export default async function AdminPage() {
     return <AdminLoginForm />;
   }
 
-  const data = await getAdminDashboardData();
+  const [data, allEventos] = await Promise.all([
+    getAdminDashboardData(),
+    listAllEventos(),
+  ]);
   const trafficAsTrend = data.trafficTrend.map((day) => ({
     date: day.date,
     reclamos: day.pageviews,
@@ -126,6 +131,12 @@ export default async function AdminPage() {
           </div>
         </Card>
       </div>
+
+      <Card className="mb-6 border-surface/80 bg-surface/95 p-4 sm:bg-surface/85">
+        <AdminEventosSection
+          initialEventos={JSON.parse(JSON.stringify(allEventos))}
+        />
+      </Card>
 
       <Card className="border-surface/80 bg-surface/95 p-4 sm:bg-surface/85">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-text-muted">

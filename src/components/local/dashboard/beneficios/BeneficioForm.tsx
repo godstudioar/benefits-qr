@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronDown, Globe, ShieldCheck } from "lucide-react";
+import { CalendarDays, ChevronDown, Globe, PartyPopper, ShieldCheck } from "lucide-react";
 import type { MedioPago } from "@/generated/prisma/client";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -27,6 +27,15 @@ export type BeneficioFormInitialData = {
   esAcumulable?: boolean;
   condicionesExtra?: string | null;
   maxUsosPorCliente?: number | null;
+  eventoId?: string | null;
+};
+
+type EventoSeleccionable = {
+  id: string;
+  nombre: string;
+  slug: string;
+  fechaInicio: string;
+  fechaFin: string;
 };
 
 export type BeneficioFormSubmitConfig = {
@@ -112,6 +121,18 @@ export default function BeneficioForm({
   const [isDaysOpen, setIsDaysOpen] = useState(mode === "edit");
   const [isVisibilityOpen, setIsVisibilityOpen] = useState(mode === "edit");
   const [isConditionsOpen, setIsConditionsOpen] = useState(mode === "edit");
+  const [eventoId, setEventoId] = useState<string | null>(initialData?.eventoId ?? null);
+  const [eventosDisponibles, setEventosDisponibles] = useState<EventoSeleccionable[]>([]);
+
+  useEffect(() => {
+    fetch("/api/eventos/seleccionables")
+      .then((r) => r.json())
+      .then((data) => setEventosDisponibles(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  const selectedEvento = eventosDisponibles.find((e) => e.id === eventoId) ?? null;
+  const isEventoCupon = eventoId !== null;
 
   const minDate = getTodayDateString();
   const todosLosDias = diasValidos.length === 0;
@@ -147,7 +168,7 @@ export default function BeneficioForm({
     setError("");
     setFieldErrors({});
 
-    if (!fechaExpiracion) {
+    if (!isEventoCupon && !fechaExpiracion) {
       setFieldErrors({ fechaExpiracion: "Seleccioná una fecha de expiración." });
       return;
     }
@@ -159,14 +180,15 @@ export default function BeneficioForm({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         descripcion,
-        fechaExpiracion,
+        fechaExpiracion: isEventoCupon ? undefined : fechaExpiracion,
         maxUsos: maxUsos ? parseInt(maxUsos, 10) : null,
-        diasValidos,
-        esPublico,
+        diasValidos: isEventoCupon ? [] : diasValidos,
+        esPublico: isEventoCupon ? false : esPublico,
         mediosPago,
         esAcumulable,
         condicionesExtra: condicionesExtra || null,
         maxUsosPorCliente: maxUsosPorCliente ? parseInt(maxUsosPorCliente, 10) : null,
+        eventoId: eventoId || null,
       }),
     });
 
@@ -202,6 +224,38 @@ export default function BeneficioForm({
         </div>
       ) : null}
 
+      {eventosDisponibles.length > 0 && (
+        <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
+          <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
+            <div className="rounded-xl bg-accent-soft p-2 text-accent">
+              <PartyPopper className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="mb-2 text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
+                Vincular a evento
+              </h2>
+              <select
+                value={eventoId ?? ""}
+                onChange={(e) => setEventoId(e.target.value || null)}
+                className="h-10 w-full rounded-xl border border-border-default bg-surface py-2 px-3 text-sm text-text-primary shadow-sm outline-none transition-[border-color,box-shadow] duration-200 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary-soft"
+              >
+                <option value="">Sin evento (cupón normal)</option>
+                {eventosDisponibles.map((ev) => (
+                  <option key={ev.id} value={ev.id}>
+                    {ev.nombre} ({ev.fechaInicio.slice(0, 10)} → {ev.fechaFin.slice(0, 10)})
+                  </option>
+                ))}
+              </select>
+              {selectedEvento && (
+                <p className="mt-2 text-xs text-accent">
+                  Vigencia automática: {selectedEvento.fechaInicio.slice(0, 10)} → {selectedEvento.fechaFin.slice(0, 10)}. No aparecerá en cupones públicos.
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:gap-3.5 2xl:gap-4">
         <div className="sm:col-span-2">
           <Input
@@ -215,14 +269,16 @@ export default function BeneficioForm({
           />
         </div>
 
-        <DatePicker
-          label="Fecha de expiración"
-          value={fechaExpiracion}
-          onChange={setFechaExpiracion}
-          min={minDate}
-          error={fieldErrors.fechaExpiracion}
-          required
-        />
+        {!isEventoCupon && (
+          <DatePicker
+            label="Fecha de expiración"
+            value={fechaExpiracion}
+            onChange={setFechaExpiracion}
+            min={minDate}
+            error={fieldErrors.fechaExpiracion}
+            required
+          />
+        )}
 
         <Input
           label="Máximo de usos"
@@ -247,7 +303,7 @@ export default function BeneficioForm({
         />
       </div>
 
-      <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
+      {!isEventoCupon && <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
         <button
           type="button"
           onClick={() => setIsDaysOpen((prev) => !prev)}
@@ -316,9 +372,9 @@ export default function BeneficioForm({
             <p className="text-xs text-text-muted lg:text-[11px] 2xl:text-xs">{copy.selectedDaysHint}</p>
           ) : null}
         </div> : null}
-      </section>
+      </section>}
 
-      <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
+      {!isEventoCupon && <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
         <button
           type="button"
           onClick={() => setIsVisibilityOpen((prev) => !prev)}
@@ -368,7 +424,7 @@ export default function BeneficioForm({
             />
           </button>
         </div> : null}
-      </section>
+      </section>}
 
       <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
         <button

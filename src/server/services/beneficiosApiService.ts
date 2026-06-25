@@ -1,6 +1,7 @@
 import { EstadoReclamo, MedioPago, Prisma } from "@/generated/prisma/client";
 import { getCurrentISODateInArgentina } from "@/lib/argentinaTime";
 import { prisma } from "@/lib/prisma";
+import { findEventoById } from "@/server/repositories/eventosRepository";
 import {
   countBeneficioReclamosByEstados,
   createBeneficio,
@@ -33,6 +34,7 @@ type BeneficioWritableInput = {
   esAcumulable?: unknown;
   condicionesExtra?: unknown;
   maxUsosPorCliente?: unknown;
+  eventoId?: unknown;
 };
 
 type NormalizedBeneficioInput = Partial<{
@@ -221,9 +223,23 @@ export async function createBeneficioFlow(
   localId: string,
   input: BeneficioWritableInput,
 ): Promise<{ ok: true; status: number; data: unknown } | ServiceError> {
+  const eventoId = typeof input.eventoId === "string" && input.eventoId ? input.eventoId : null;
+  let eventoFechaFin: Date | null = null;
+
+  if (eventoId) {
+    const evento = await findEventoById(eventoId);
+    if (!evento || !evento.activo) {
+      return createServiceError(400, "EVENTO_NOT_FOUND", "El evento seleccionado no existe o no está activo.");
+    }
+    if (evento.fechaFin < new Date()) {
+      return createServiceError(400, "EVENTO_EXPIRED", "El evento seleccionado ya finalizó.");
+    }
+    eventoFechaFin = evento.fechaFin;
+  }
+
   const normalized = normalizeBeneficioInput(input, {
     requireDescripcion: true,
-    requireFechaExpiracion: true,
+    requireFechaExpiracion: !eventoId,
   });
   if (!normalized.ok) {
     return normalized;
@@ -231,15 +247,16 @@ export async function createBeneficioFlow(
 
   const beneficio = await createBeneficio({
     descripcion: normalized.data.descripcion!,
-    fechaExpiracion: normalized.data.fechaExpiracion!,
+    fechaExpiracion: eventoFechaFin ?? normalized.data.fechaExpiracion!,
     maxUsos: normalized.data.maxUsos ?? null,
-    diasValidos: normalized.data.diasValidos ?? [],
-    esPublico: normalized.data.esPublico ?? false,
+    diasValidos: eventoId ? [] : (normalized.data.diasValidos ?? []),
+    esPublico: eventoId ? false : (normalized.data.esPublico ?? false),
     mediosPago: normalized.data.mediosPago ?? [],
     esAcumulable: normalized.data.esAcumulable ?? true,
     condicionesExtra: normalized.data.condicionesExtra ?? null,
     maxUsosPorCliente: normalized.data.maxUsosPorCliente ?? null,
     localId,
+    eventoId,
   });
 
   return { ok: true, status: 201, data: beneficio };
