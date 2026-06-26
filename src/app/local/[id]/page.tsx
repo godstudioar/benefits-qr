@@ -44,7 +44,7 @@ export default async function LocalPublicPage({
       <div className="space-y-5 sm:space-y-6 lg:space-y-5 2xl:space-y-6">
         <Reveal delay={0.04} y={12} amount={0.2}>
           <Card className={`border-surface/80 bg-surface/95 p-4 ${SHADOW.cardBase} sm:bg-surface/85 sm:p-5 lg:p-4 2xl:p-5`}>
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex min-w-0 items-start gap-3.5">
                 <LogoFrame
                   src={local.logoDisplayUrl}
@@ -79,8 +79,8 @@ export default async function LocalPublicPage({
                 </div>
               </div>
 
-                <div className="flex justify-end">
-                  <Badge variant="light" className="gap-1.5 px-3 py-1 text-[11px] sm:text-xs">
+                <div className="flex justify-end lg:flex-none">
+                  <Badge variant="light" className="gap-1.5 px-3 py-1 text-[11px] sm:text-xs lg:self-start">
                     <Ticket className="h-3.5 w-3.5" aria-hidden="true" />
                     {redeemableNowCount === 1 ? "1 disponible" : `${redeemableNowCount} disponibles`}
                   </Badge>

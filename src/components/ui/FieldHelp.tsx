@@ -51,6 +51,8 @@ export default function FieldHelp({ label, content, className, contentClassName 
         align="start"
         side="top"
         sideOffset={10}
+        onOpenAutoFocus={(event) => event.preventDefault()}
+        onCloseAutoFocus={(event) => event.preventDefault()}
         onMouseEnter={() => dispatch({ type: "hover", active: true })}
         onMouseLeave={() => dispatch({ type: "hover", active: false })}
         className={cn(

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Check, Copy, ExternalLink, Printer } from "lucide-react";
 import Button from "@/components/ui/Button";
+import LinkButton from "@/components/ui/LinkButton";
 import ShareQrPdfButton from "@/components/local/dashboard/ShareQrPdfButton";
 
 type LocalQrActionsProps = {
@@ -21,21 +21,22 @@ export default function LocalQrActions({ url, localName }: LocalQrActionsProps) 
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-      <Link
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+      <LinkButton
         href={url}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Abrir página"
         title="Abrir página"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border-default bg-surface-muted text-text-primary shadow-sm transition-[transform,background-color,color,box-shadow,border-color] duration-200 hover:border-border-default hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-soft focus-visible:ring-offset-2 active:scale-[0.98]"
+        variant="subtle"
+        size="icon-sm"
       >
         <ExternalLink className="h-4 w-4" aria-hidden="true" />
-      </Link>
+      </LinkButton>
 
       <Button
         type="button"
-        variant="secondary"
+        variant="subtle"
         size="sm"
         onClick={() => void handleCopy()}
         title={copied ? "Link copiado" : "Copiar enlace de la página"}
@@ -65,7 +66,7 @@ export default function LocalQrActions({ url, localName }: LocalQrActionsProps) 
         confirmActionLabel="Continuar"
         modalTitle="Imprimir QR del local"
         modalDescription="Elegí un tamaño para exportar un PDF con el QR permanente de la página de este local."
-        buttonVariant="secondary"
+        buttonVariant="subtle"
         buttonSize="icon-sm"
         buttonClassName="h-9 w-9 rounded-xl"
       >

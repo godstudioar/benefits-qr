@@ -18,6 +18,7 @@ import {
 } from "@/lib/statusPresentation";
 import { getBeneficioDetailPageData } from "@/server/services/beneficioDetailService";
 import { SHADOW } from "@/lib/shadowStyles";
+import { getBeneficioTimeWindowLabels } from "@/lib/beneficioSchedule";
 const PAGE_SIZE = 10;
 
 export default async function BeneficioStatsPage({
@@ -45,6 +46,7 @@ export default async function BeneficioStatsPage({
   const benefitStatus = getBeneficioStatusPresentation(beneficio.effectiveStatus);
 
   const isDeleted = beneficio.deletedAt !== null;
+  const timeWindowLabels = getBeneficioTimeWindowLabels(beneficio.ventanasHorarias);
 
   return (
     <main className="mx-auto max-w-5xl px-4 pt-6 pb-8 sm:px-6 sm:pt-8 lg:max-w-4xl lg:pt-7 2xl:max-w-5xl 2xl:pt-8">
@@ -85,7 +87,16 @@ export default async function BeneficioStatsPage({
                   Vence: {formatDateAR(beneficio.fechaExpiracion)}
                   {beneficio.maxUsos && ` · Máx. ${beneficio.maxUsos} usos`}
                 </p>
-                <BenefitWeekdays diasValidos={beneficio.diasValidos} size="md" />
+                <div className="space-y-1.5">
+                  <BenefitWeekdays diasValidos={beneficio.diasValidos} size="md" />
+                  {timeWindowLabels.length > 0 ? (
+                    <div className="space-y-1 text-xs text-text-muted lg:text-[11px] 2xl:text-xs">
+                      {timeWindowLabels.map((label) => (
+                        <p key={label}>{label}</p>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
                 {(beneficio.mediosPago.length > 0 || !beneficio.esAcumulable || beneficio.condicionesExtra) && (
                   <div className="rounded-xl border border-border-default/70 bg-surface-muted/60 px-3 py-2.5">
                     <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
@@ -106,7 +117,7 @@ export default async function BeneficioStatsPage({
                                 medio === "DEBITO" ? "Débito" :
                                 medio === "CREDITO" ? "Crédito" : medio;
                               return (
-                                <Badge key={medio} variant="secondary" className="px-2 py-0 text-[11px]">
+                                <Badge key={medio} variant="neutral" className="px-2 py-0 text-[11px]">
                                   {label}
                                 </Badge>
                               );
@@ -131,7 +142,6 @@ export default async function BeneficioStatsPage({
 
               {!isDeleted ? (
                 <div className="hidden shrink-0 sm:flex sm:items-start sm:justify-end sm:gap-2">
-                  <DeleteBeneficioButton id={beneficio.id} />
                   <LinkButton
                     href={`/dashboard/beneficios/${beneficio.id}/editar`}
                     variant="outline"
@@ -139,6 +149,7 @@ export default async function BeneficioStatsPage({
                   >
                     Editar
                   </LinkButton>
+                  <DeleteBeneficioButton id={beneficio.id} />
                 </div>
               ) : null}
             </div>

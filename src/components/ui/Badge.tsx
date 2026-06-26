@@ -1,10 +1,9 @@
 import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
-import type { SemanticVisualVariant } from "@/components/ui/buttonStyles";
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: SemanticVisualVariant;
+  variant?: BadgeVariant;
   className?: string;
 }
 
@@ -20,6 +19,7 @@ const badgeVariants = cva(
         danger: "bg-danger-soft text-danger",
         light: "border border-primary-soft/70 bg-primary-soft text-accent",
         muted: "bg-surface-muted text-text-muted",
+        neutral: "border border-border-default/80 bg-surface text-text-secondary",
       },
     },
     defaultVariants: {

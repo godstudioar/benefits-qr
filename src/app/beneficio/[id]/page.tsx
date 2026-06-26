@@ -13,7 +13,11 @@ import LinkButton from "@/components/ui/LinkButton";
 import Reveal from "@/components/ui/Reveal";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { formatDateAR } from "@/lib/dates";
-import { normalizeBeneficioTimeWindows, sortDiasValidos } from "@/lib/beneficioSchedule";
+import {
+  getBeneficioTimeWindowLabels,
+  normalizeBeneficioTimeWindows,
+  sortDiasValidos,
+} from "@/lib/beneficioSchedule";
 import { evaluateBeneficioState } from "@/lib/couponStatus";
 import { DIRECT_QR_FLOW } from "@/lib/flows";
 import { getBeneficioAvailabilityPresentation } from "@/lib/statusPresentation";
@@ -101,6 +105,7 @@ export default async function BeneficioPublicoPage({
     diasValidos,
     ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
   });
+  const timeWindowLabels = getBeneficioTimeWindowLabels(normalizedWindows.ok ? normalizedWindows.value : null);
 
   const isDirectFlow = flow === DIRECT_QR_FLOW;
   const directRedeemed = isDirectFlow && redeemed === "1";
@@ -216,6 +221,13 @@ export default async function BeneficioPublicoPage({
                   ) : null}
                   <BenefitWeekdays diasValidos={diasValidosOrdenados} />
                 </div>
+                {timeWindowLabels.length > 0 ? (
+                  <div className="space-y-1 text-sm text-text-muted lg:text-[13px] 2xl:text-sm">
+                    {timeWindowLabels.map((label) => (
+                      <p key={label}>{label}</p>
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
               {(beneficio.mediosPago.length > 0 || !beneficio.esAcumulable || beneficio.condicionesExtra) && (
@@ -238,7 +250,7 @@ export default async function BeneficioPublicoPage({
                               medio === "DEBITO" ? "Débito" :
                               medio === "CREDITO" ? "Crédito" : medio;
                             return (
-                              <Badge key={medio} variant="secondary" className="px-2.5 py-0.5 text-xs">
+                              <Badge key={medio} variant="neutral" className="px-2.5 py-0.5 text-xs">
                                 {label}
                               </Badge>
                             );

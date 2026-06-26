@@ -20,6 +20,8 @@ import {
 import {
   createDefaultWindowDraft,
   createWindowDraftMap,
+  hasCrossMidnightWindowDrafts,
+  isCrossMidnightDraft,
   serializeWindowDrafts,
   syncWindowDrafts,
   toggleSelectedWeekday,
@@ -108,7 +110,7 @@ const BENEFICIO_FIELD_HELP = {
   diasDisponibles:
     "Elegí si el cupón aplica todos los días o solo en días puntuales. Esto te ayuda a controlar cuándo aparece como válido.",
   horarioPorDia:
-    "Activalo si necesitás horarios distintos por día. Solo funciona cuando seleccionaste días específicos, no para “Todos los días”.",
+    "Activalo si necesitás horarios distintos por día. Cada rango debe empezar y terminar dentro del mismo día; si querés horario de madrugada, configurá el día siguiente por separado. Solo funciona cuando seleccionaste días específicos, no para “Todos los días”.",
   visibilidad:
     "Un cupón público aparece en el directorio para cualquier persona. Uno privado solo se puede compartir por link directo.",
   mediosPago:
@@ -136,14 +138,13 @@ export default function BeneficioForm({
 }: BeneficioFormProps) {
   const router = useRouter();
   const copy = { ...DEFAULT_CONSTRAINT_COPY, ...constraintCopy };
+  const initialTimeWindowDrafts = useMemo(() => createWindowDraftMap(initialData?.ventanasHorarias), [initialData?.ventanasHorarias]);
   const [descripcion, setDescripcion] = useState(initialData?.descripcion ?? "");
   const [fechaExpiracion, setFechaExpiracion] = useState(initialData?.fechaExpiracion ?? "");
   const [maxUsos, setMaxUsos] = useState(initialData?.maxUsos?.toString() ?? "");
   const [diasValidos, setDiasValidos] = useState<number[]>(initialData?.diasValidos ?? []);
   const [useTimeWindows, setUseTimeWindows] = useState(hasBeneficioTimeWindows(initialData?.ventanasHorarias));
-  const [timeWindowDrafts, setTimeWindowDrafts] = useState<TimeWindowDraftMap>(() =>
-    createWindowDraftMap(initialData?.ventanasHorarias),
-  );
+  const [timeWindowDrafts, setTimeWindowDrafts] = useState<TimeWindowDraftMap>(() => initialTimeWindowDrafts);
   const [esPublico, setEsPublico] = useState(initialData?.esPublico ?? false);
   const [mediosPago, setMediosPago] = useState<MedioPago[]>(initialData?.mediosPago ?? []);
   const [esAcumulable, setEsAcumulable] = useState(initialData?.esAcumulable ?? true);
@@ -152,6 +153,7 @@ export default function BeneficioForm({
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<(typeof FIELD_ERROR_KEYS)[number], string>>>({});
   const [loading, setLoading] = useState(false);
+  const [scheduleTouched, setScheduleTouched] = useState(false);
   const [isDaysOpen, setIsDaysOpen] = useState(mode === "edit");
   const [isVisibilityOpen, setIsVisibilityOpen] = useState(mode === "edit");
   const [isConditionsOpen, setIsConditionsOpen] = useState(mode === "edit");
@@ -178,6 +180,7 @@ export default function BeneficioForm({
   }
 
   function handleDiaToggle(value: number) {
+    setScheduleTouched(true);
     setDiasValidos((prev) => {
       const nextDays = toggleSelectedWeekday(prev, value);
 
@@ -192,6 +195,7 @@ export default function BeneficioForm({
   }
 
   function handleEnableTimeWindows(enabled: boolean) {
+    setScheduleTouched(true);
     setUseTimeWindows(enabled);
     setFieldErrors((prev) => {
       if (!prev.ventanasHorarias) {
@@ -209,6 +213,7 @@ export default function BeneficioForm({
   }
 
   function handleWindowDraftChange(day: number, field: keyof TimeWindowDraft, value: string) {
+    setScheduleTouched(true);
     setTimeWindowDrafts((prev) => ({
       ...prev,
       [day]: {
@@ -254,7 +259,13 @@ export default function BeneficioForm({
       return;
     }
 
-    if (useTimeWindows) {
+    const preserveUntouchedLegacySchedule =
+      mode === "edit" &&
+      !scheduleTouched &&
+      useTimeWindows &&
+      hasCrossMidnightWindowDrafts(diasSeleccionados, initialTimeWindowDrafts);
+
+    if (useTimeWindows && !preserveUntouchedLegacySchedule) {
       if (todosLosDias || diasSeleccionados.length === 0) {
         setFieldErrors({ ventanasHorarias: "Seleccioná días específicos antes de configurar un horario." });
         return;
@@ -268,30 +279,39 @@ export default function BeneficioForm({
       }
     }
 
-    const serializedWindows = useTimeWindows ? serializeWindowDrafts(diasSeleccionados, timeWindowDrafts) : null;
+    const serializedWindows = preserveUntouchedLegacySchedule
+      ? undefined
+      : useTimeWindows
+        ? serializeWindowDrafts(diasSeleccionados, timeWindowDrafts)
+        : null;
 
-    if (useTimeWindows && !serializedWindows) {
+    if (useTimeWindows && !preserveUntouchedLegacySchedule && !serializedWindows) {
       setFieldErrors({ ventanasHorarias: "No pudimos interpretar el horario configurado. Revisá los valores cargados." });
       return;
     }
 
     setLoading(true);
 
+    const requestBody: Record<string, unknown> = {
+      descripcion,
+      fechaExpiracion,
+      maxUsos: formValidation.parsedMaxUsos,
+      diasValidos,
+      esPublico,
+      mediosPago,
+      esAcumulable,
+      condicionesExtra: condicionesExtra || null,
+      maxUsosPorCliente: formValidation.parsedMaxUsosPorCliente,
+    };
+
+    if (serializedWindows !== undefined) {
+      requestBody.ventanasHorarias = serializedWindows;
+    }
+
     const response = await fetch(submitConfig.endpoint, {
       method: submitConfig.method ?? "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        descripcion,
-        fechaExpiracion,
-        maxUsos: formValidation.parsedMaxUsos,
-        diasValidos,
-        ventanasHorarias: serializedWindows,
-        esPublico,
-        mediosPago,
-        esAcumulable,
-        condicionesExtra: condicionesExtra || null,
-        maxUsosPorCliente: formValidation.parsedMaxUsosPorCliente,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
@@ -510,7 +530,9 @@ export default function BeneficioForm({
                         {getDiaLabel(day, "full")}
                       </p>
                       <p className="text-xs text-text-muted lg:text-[11px] 2xl:text-xs">
-                        Si el cierre pasa la medianoche, cargá una hora de fin menor a la de inicio.
+                        {isCrossMidnightDraft(draft)
+                          ? "Horario heredado: este rango cruza al día siguiente. Si editás esta sección, vas a tener que separarlo por días."
+                          : "El horario debe empezar y terminar en el mismo día. Si necesitás madrugada, configurá el día siguiente por separado."}
                       </p>
                     </div>
 

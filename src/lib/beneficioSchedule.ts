@@ -26,6 +26,10 @@ type NormalizeTimeWindowsResult =
   | { ok: true; value: BeneficioTimeWindows | null }
   | { ok: false; code: string; message: string; field: "ventanasHorarias" };
 
+interface NormalizeTimeWindowsOptions {
+  allowCrossMidnight?: boolean;
+}
+
 type LabelStyle = "short" | "full";
 
 interface FormatDiasOptions {
@@ -76,6 +80,10 @@ export function formatMinuteOfDay(minute: number) {
   return `${hours}:${minutes}`;
 }
 
+function capitalizeLabel(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export function getBeneficioWindowEntries(windows: BeneficioTimeWindows | null | undefined): BeneficioTimeWindowEntry[] {
   if (!hasBeneficioTimeWindows(windows)) {
     return [];
@@ -101,10 +109,33 @@ export function getBeneficioWindowEntries(windows: BeneficioTimeWindows | null |
     .sort((left, right) => left.weekday - right.weekday);
 }
 
+export function formatBeneficioTimeWindowLabel(
+  weekday: WeekdayIndex,
+  window: DailyTimeWindow,
+  style: LabelStyle = "full",
+) {
+  const crossesIntoNextDay = isCrossMidnightWindow(window);
+  const nextDaySuffix = crossesIntoNextDay ? " (continúa al día siguiente)" : "";
+
+  return `${capitalizeLabel(getDiaLabel(weekday, style))} · ${formatMinuteOfDay(window.startMinute)} a ${formatMinuteOfDay(window.endMinute)}${nextDaySuffix}`;
+}
+
+export function getBeneficioTimeWindowLabels(
+  windows: BeneficioTimeWindows | null | undefined,
+  style: LabelStyle = "full",
+) {
+  return getBeneficioWindowEntries(windows).map(({ weekday, window }) =>
+    formatBeneficioTimeWindowLabel(weekday, window, style)
+  );
+}
+
 export function normalizeBeneficioTimeWindows(
   value: unknown,
   diasValidos?: number[],
+  options: NormalizeTimeWindowsOptions = {},
 ): NormalizeTimeWindowsResult {
+  const { allowCrossMidnight = true } = options;
+
   if (value === null || value === undefined) {
     return { ok: true, value: null };
   }
@@ -158,6 +189,15 @@ export function normalizeBeneficioTimeWindows(
         ok: false,
         code: "INVALID_VENTANAS_HORARIAS",
         message: `Weekday ${weekday} cannot use identical start and end minutes`,
+        field: "ventanasHorarias",
+      };
+    }
+
+    if (!allowCrossMidnight && candidate.endMinute < candidate.startMinute) {
+      return {
+        ok: false,
+        code: "INVALID_VENTANAS_HORARIAS",
+        message: `El horario del ${getDiaLabel(weekday, "full")} debe terminar el mismo día. Si querés seguir después de medianoche, configurá el día siguiente por separado.`,
         field: "ventanasHorarias",
       };
     }

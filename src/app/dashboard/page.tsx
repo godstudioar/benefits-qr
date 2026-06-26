@@ -6,6 +6,7 @@ import ShareButtons from "@/components/local/dashboard/ShareButtons";
 import BenefitWeekdays from "@/components/ui/BenefitWeekdays";
 import Badge from "@/components/ui/Badge";
 import Card from "@/components/ui/Card";
+import FieldHelp from "@/components/ui/FieldHelp";
 import LinkButton from "@/components/ui/LinkButton";
 import LogoFrame from "@/components/ui/LogoFrame";
 import Reveal from "@/components/ui/Reveal";
@@ -136,12 +137,15 @@ export default async function DashboardPage({
               </div>
             )}
           </div>
-          <div className="mt-4 flex flex-col gap-2 border-t border-border-default/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-text-primary">QR permanente del local</p>
-              <p className="text-xs text-text-muted">
-                Imprimí un solo QR para la página de tu local y dejá que el cliente elija cualquier cupón activo.
-              </p>
+          <div className="mt-4 flex items-start justify-between gap-3 border-t border-border-default/70 pt-4 sm:items-center">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-semibold text-text-primary">QR de tu negocio</p>
+                <FieldHelp
+                  label="QR de tu negocio"
+                  content="Imprimí un solo QR para la página de tu local y dejá que el cliente elija cualquier cupón activo."
+                />
+              </div>
             </div>
             <LocalQrActions url={localShareUrl} localName={localName} />
           </div>
