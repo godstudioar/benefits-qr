@@ -5,6 +5,7 @@ interface SectionHeaderProps {
   title: string;
   description?: string;
   align?: "left" | "center";
+  titleAs?: "h1" | "h2" | "p";
   className?: string;
 }
 
@@ -13,28 +14,30 @@ export default function SectionHeader({
   title,
   description,
   align = "center",
+  titleAs = "h2",
   className,
 }: SectionHeaderProps) {
   const isCenter = align === "center";
+  const TitleTag = titleAs;
 
   return (
     <div
       className={cn(
-        "mb-10 lg:mb-8 2xl:mb-12",
+        "mb-6",
         isCenter ? "text-center" : "text-left",
         className
       )}
     >
-      <span className="mb-3 block text-xs font-semibold uppercase tracking-widest text-primary lg:mb-2.5 2xl:mb-3">
+      <span className="mb-2.5 block text-xs font-semibold uppercase tracking-[0.18em] text-primary">
         {eyebrow}
       </span>
-      <h2 className="text-2xl font-bold tracking-tight text-text-primary lg:text-xl 2xl:text-2xl">
+      <TitleTag className="text-balance text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
         {title}
-      </h2>
+      </TitleTag>
       {description ? (
         <p
           className={cn(
-            "mt-3 max-w-full leading-relaxed text-text-muted lg:mt-2.5 lg:text-sm 2xl:mt-3 2xl:text-base",
+            "mt-3 max-w-2xl text-sm leading-relaxed text-text-muted sm:text-base",
             isCenter ? "mx-auto" : "mr-auto"
           )}
         >

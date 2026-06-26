@@ -17,19 +17,20 @@ export default async function EditPerfilPage() {
   if (!local) redirect("/login");
 
   return (
-    <main className="mx-auto max-w-xl px-4 pt-6 pb-8 sm:px-6 sm:pt-8 lg:max-w-lg lg:pt-7 2xl:max-w-xl 2xl:pt-8">
-      <Reveal y={10} amount={0.2} className="mb-6 sm:mb-8 lg:mb-6 2xl:mb-8">
+    <main className="mx-auto w-full max-w-3xl">
+      <Reveal y={10} amount={0.2} className="mb-6 sm:mb-8">
         <SectionHeader
           eyebrow="Negocio"
           title="Datos del negocio"
           description="Actualizá los datos públicos de tu negocio"
           align="left"
+          titleAs="h1"
           className="!mb-0"
         />
       </Reveal>
 
       <Reveal delay={0.04} y={12} amount={0.2}>
-        <div className="mx-auto w-full max-w-md lg:max-w-sm 2xl:max-w-md">
+        <div className="mx-auto w-full max-w-md">
           <EditPerfilForm
             email={local.email}
             nombre={local.nombre ?? ""}
