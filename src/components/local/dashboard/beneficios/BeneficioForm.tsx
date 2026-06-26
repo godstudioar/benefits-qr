@@ -20,7 +20,6 @@ import {
 import {
   createDefaultWindowDraft,
   createWindowDraftMap,
-  hasCrossMidnightWindowDrafts,
   isCrossMidnightDraft,
   serializeWindowDrafts,
   syncWindowDrafts,
@@ -110,7 +109,7 @@ const BENEFICIO_FIELD_HELP = {
   diasDisponibles:
     "Elegí si el cupón aplica todos los días o solo en días puntuales. Esto te ayuda a controlar cuándo aparece como válido.",
   horarioPorDia:
-    "Activalo si necesitás horarios distintos por día. Cada rango debe empezar y terminar dentro del mismo día; si querés horario de madrugada, configurá el día siguiente por separado. Solo funciona cuando seleccionaste días específicos, no para “Todos los días”.",
+    "Activalo si necesitás horarios distintos por día. Si la hora de fin es menor que la de inicio, ese rango continúa al día siguiente. Solo funciona cuando seleccionaste días específicos, no para “Todos los días”.",
   visibilidad:
     "Un cupón público aparece en el directorio para cualquier persona. Uno privado solo se puede compartir por link directo.",
   mediosPago:
@@ -153,7 +152,6 @@ export default function BeneficioForm({
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<(typeof FIELD_ERROR_KEYS)[number], string>>>({});
   const [loading, setLoading] = useState(false);
-  const [scheduleTouched, setScheduleTouched] = useState(false);
   const [isDaysOpen, setIsDaysOpen] = useState(mode === "edit");
   const [isVisibilityOpen, setIsVisibilityOpen] = useState(mode === "edit");
   const [isConditionsOpen, setIsConditionsOpen] = useState(mode === "edit");
@@ -180,7 +178,6 @@ export default function BeneficioForm({
   }
 
   function handleDiaToggle(value: number) {
-    setScheduleTouched(true);
     setDiasValidos((prev) => {
       const nextDays = toggleSelectedWeekday(prev, value);
 
@@ -195,7 +192,6 @@ export default function BeneficioForm({
   }
 
   function handleEnableTimeWindows(enabled: boolean) {
-    setScheduleTouched(true);
     setUseTimeWindows(enabled);
     setFieldErrors((prev) => {
       if (!prev.ventanasHorarias) {
@@ -213,7 +209,6 @@ export default function BeneficioForm({
   }
 
   function handleWindowDraftChange(day: number, field: keyof TimeWindowDraft, value: string) {
-    setScheduleTouched(true);
     setTimeWindowDrafts((prev) => ({
       ...prev,
       [day]: {
@@ -259,13 +254,7 @@ export default function BeneficioForm({
       return;
     }
 
-    const preserveUntouchedLegacySchedule =
-      mode === "edit" &&
-      !scheduleTouched &&
-      useTimeWindows &&
-      hasCrossMidnightWindowDrafts(diasSeleccionados, initialTimeWindowDrafts);
-
-    if (useTimeWindows && !preserveUntouchedLegacySchedule) {
+    if (useTimeWindows) {
       if (todosLosDias || diasSeleccionados.length === 0) {
         setFieldErrors({ ventanasHorarias: "Seleccioná días específicos antes de configurar un horario." });
         return;
@@ -279,13 +268,9 @@ export default function BeneficioForm({
       }
     }
 
-    const serializedWindows = preserveUntouchedLegacySchedule
-      ? undefined
-      : useTimeWindows
-        ? serializeWindowDrafts(diasSeleccionados, timeWindowDrafts)
-        : null;
+    const serializedWindows = useTimeWindows ? serializeWindowDrafts(diasSeleccionados, timeWindowDrafts) : null;
 
-    if (useTimeWindows && !preserveUntouchedLegacySchedule && !serializedWindows) {
+    if (useTimeWindows && !serializedWindows) {
       setFieldErrors({ ventanasHorarias: "No pudimos interpretar el horario configurado. Revisá los valores cargados." });
       return;
     }
@@ -498,7 +483,7 @@ export default function BeneficioForm({
                   <p className="text-sm text-text-muted lg:text-[13px] 2xl:text-sm">
                     {todosLosDias
                       ? "Para cargar un horario, primero elegí los días puntuales en los que querés que aplique el cupón."
-                      : "Definí desde qué hora hasta qué hora puede canjearse el cupón en cada día elegido."}
+                      : "Definí desde qué hora hasta qué hora puede canjearse el cupón en cada día elegido. Si la hora de fin es menor que la de inicio, el rango sigue al día siguiente."}
                   </p>
                 </div>
               <button
@@ -524,15 +509,15 @@ export default function BeneficioForm({
             {useTimeWindows && !todosLosDias ? (
               <div className="mt-3 space-y-3 lg:mt-2.5 lg:space-y-2.5 2xl:mt-3 2xl:space-y-3">
                 {selectedDaysWindowDrafts.map(({ day, draft }) => (
-                  <div key={day} className="grid gap-3 rounded-xl border border-border-default/60 bg-surface px-3 py-3 sm:grid-cols-[minmax(0,1fr)_140px_140px] sm:items-end lg:px-3 lg:py-2.5 2xl:px-3 2xl:py-3">
-                    <div>
+                  <div key={day} className="grid grid-cols-2 gap-3 rounded-xl border border-border-default/60 bg-surface px-3 py-3 sm:grid-cols-[minmax(0,1fr)_140px_140px] sm:items-start lg:px-3 lg:py-2.5 2xl:px-3 2xl:py-3">
+                    <div className="col-span-2 sm:col-span-1">
                       <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
-                        {getDiaLabel(day, "full")}
+                        {getDiaLabel(day, "full").charAt(0).toUpperCase() + getDiaLabel(day, "full").slice(1)}
                       </p>
                       <p className="text-xs text-text-muted lg:text-[11px] 2xl:text-xs">
                         {isCrossMidnightDraft(draft)
-                          ? "Horario heredado: este rango cruza al día siguiente. Si editás esta sección, vas a tener que separarlo por días."
-                          : "El horario debe empezar y terminar en el mismo día. Si necesitás madrugada, configurá el día siguiente por separado."}
+                          ? "Este rango cruza al día siguiente porque la hora de fin es menor que la de inicio."
+                          : "Si la hora de fin es menor que la de inicio, el rango continúa al día siguiente."}
                       </p>
                     </div>
 

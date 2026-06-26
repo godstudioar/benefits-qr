@@ -161,9 +161,7 @@ function normalizeBeneficioInput(
   }
 
   if (hasOwnInputField(input, "ventanasHorarias")) {
-    const normalizedWindows = normalizeBeneficioTimeWindows(input.ventanasHorarias, normalized.diasValidos, {
-      allowCrossMidnight: false,
-    });
+    const normalizedWindows = normalizeBeneficioTimeWindows(input.ventanasHorarias, normalized.diasValidos);
 
     if (!normalizedWindows.ok) {
       return createTimeWindowsError(normalizedWindows.code, normalizedWindows.message, normalizedWindows.field);
@@ -260,9 +258,7 @@ export async function createBeneficioFlow(
   }
 
   const diasValidos = normalized.data.diasValidos ?? [];
-  const normalizedWindows = normalizeBeneficioTimeWindows(normalized.data.ventanasHorarias ?? null, diasValidos, {
-    allowCrossMidnight: false,
-  });
+  const normalizedWindows = normalizeBeneficioTimeWindows(normalized.data.ventanasHorarias ?? null, diasValidos);
 
   if (!normalizedWindows.ok) {
     return createTimeWindowsError(normalizedWindows.code, normalizedWindows.message, normalizedWindows.field);
@@ -350,11 +346,6 @@ export async function updateBeneficioFlow(
         const resolvedWindows = normalizeBeneficioTimeWindows(
           normalized.data.ventanasHorarias === undefined ? beneficio.ventanasHorarias : normalized.data.ventanasHorarias,
           resolvedDiasValidos,
-          normalized.data.ventanasHorarias === undefined
-            ? undefined
-            : {
-                allowCrossMidnight: false,
-              },
         );
 
         if (!resolvedWindows.ok) {

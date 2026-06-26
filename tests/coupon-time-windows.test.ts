@@ -9,7 +9,6 @@ import {
 } from "@/lib/couponStatus";
 import {
   createWindowDraftMap,
-  hasCrossMidnightWindowDrafts,
   serializeWindowDrafts,
   syncWindowDrafts,
   toggleSelectedWeekday,
@@ -172,25 +171,13 @@ test("invalid window payloads are rejected when weekdays and windows drift", () 
   assert.equal(mismatched.ok, false);
 });
 
-test("new writes reject cross-midnight windows but legacy reads stay parseable", () => {
+test("new writes allow cross-midnight windows again", () => {
   const createValidation = normalizeBeneficioTimeWindows(
-    { 5: { startMinute: 18 * 60, endMinute: 4 * 60 } },
-    [5],
-    { allowCrossMidnight: false },
-  );
-  const legacyRead = normalizeBeneficioTimeWindows(
     { 5: { startMinute: 18 * 60, endMinute: 4 * 60 } },
     [5],
   );
 
-  assert.equal(createValidation.ok, false);
-  if (!createValidation.ok) {
-    assert.equal(
-      createValidation.message,
-      "El horario del viernes debe terminar el mismo día. Si querés seguir después de medianoche, configurá el día siguiente por separado.",
-    );
-  }
-  assert.equal(legacyRead.ok, true);
+  assert.equal(createValidation.ok, true);
 });
 
 test("legacy cross-midnight labels stay explicit on read paths", () => {
@@ -264,10 +251,7 @@ test("form helper validation rejects invalid weekday/window combinations", () =>
     validateTimeWindowDrafts([5], { 5: { start: "18:00", end: "18:00" } }),
     "El horario del viernes no puede tener la misma hora de inicio y fin.",
   );
-  assert.equal(
-    validateTimeWindowDrafts([5], { 5: { start: "18:00", end: "04:00" } }),
-    "El horario del viernes debe terminar el mismo día. Si querés seguir después de medianoche, configurá el día siguiente por separado.",
-  );
+  assert.equal(validateTimeWindowDrafts([5], { 5: { start: "18:00", end: "04:00" } }), null);
   assert.equal(validateTimeWindowDrafts([5], {}), "Completá el horario del viernes.");
 });
 
@@ -288,11 +272,4 @@ test("form helper cleanup drops unchecked weekdays before submit serialization",
   assert.deepEqual(createWindowDraftMap({ 6: { startMinute: 20 * 60, endMinute: 23 * 60 } }), {
     6: { start: "20:00", end: "23:00" },
   });
-});
-
-test("legacy draft helpers detect untouched overnight ranges", () => {
-  const drafts = createWindowDraftMap(FRIDAY_CROSS_MIDNIGHT);
-
-  assert.equal(hasCrossMidnightWindowDrafts([5], drafts), true);
-  assert.equal(hasCrossMidnightWindowDrafts([6], drafts), false);
 });

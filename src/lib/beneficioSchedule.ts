@@ -26,10 +26,6 @@ type NormalizeTimeWindowsResult =
   | { ok: true; value: BeneficioTimeWindows | null }
   | { ok: false; code: string; message: string; field: "ventanasHorarias" };
 
-interface NormalizeTimeWindowsOptions {
-  allowCrossMidnight?: boolean;
-}
-
 type LabelStyle = "short" | "full";
 
 interface FormatDiasOptions {
@@ -132,10 +128,7 @@ export function getBeneficioTimeWindowLabels(
 export function normalizeBeneficioTimeWindows(
   value: unknown,
   diasValidos?: number[],
-  options: NormalizeTimeWindowsOptions = {},
 ): NormalizeTimeWindowsResult {
-  const { allowCrossMidnight = true } = options;
-
   if (value === null || value === undefined) {
     return { ok: true, value: null };
   }
@@ -189,15 +182,6 @@ export function normalizeBeneficioTimeWindows(
         ok: false,
         code: "INVALID_VENTANAS_HORARIAS",
         message: `Weekday ${weekday} cannot use identical start and end minutes`,
-        field: "ventanasHorarias",
-      };
-    }
-
-    if (!allowCrossMidnight && candidate.endMinute < candidate.startMinute) {
-      return {
-        ok: false,
-        code: "INVALID_VENTANAS_HORARIAS",
-        message: `El horario del ${getDiaLabel(weekday, "full")} debe terminar el mismo día. Si querés seguir después de medianoche, configurá el día siguiente por separado.`,
         field: "ventanasHorarias",
       };
     }

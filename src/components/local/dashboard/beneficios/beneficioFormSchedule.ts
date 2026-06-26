@@ -48,10 +48,6 @@ export function isCrossMidnightDraft(draft: TimeWindowDraft | undefined) {
   return startMinute !== null && endMinute !== null && endMinute < startMinute;
 }
 
-export function hasCrossMidnightWindowDrafts(days: number[], drafts: TimeWindowDraftMap) {
-  return sortDiasValidos(days).some((day) => isCrossMidnightDraft(drafts[day]));
-}
-
 export function toggleSelectedWeekday(previousDays: number[], day: number) {
   if (previousDays.length === 0) {
     return [day];
@@ -110,10 +106,6 @@ export function validateTimeWindowDrafts(days: number[], drafts: TimeWindowDraft
 
     if (startMinute === endMinute) {
       return `El horario del ${getDiaLabel(day, "full")} no puede tener la misma hora de inicio y fin.`;
-    }
-
-    if (endMinute < startMinute) {
-      return `El horario del ${getDiaLabel(day, "full")} debe terminar el mismo día. Si querés seguir después de medianoche, configurá el día siguiente por separado.`;
     }
   }
 
