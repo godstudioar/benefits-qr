@@ -17,6 +17,7 @@ export type PublicBenefitsCatalogRaw = {
     fechaExpiracion: string;
     maxUsos: number | null;
     diasValidos: number[];
+    ventanasHorarias: Prisma.JsonValue | null;
     createdAt: string;
     canjeados: number;
     local: {
@@ -41,9 +42,57 @@ export type PublicBenefitsLocaleRaw = {
   beneficiosCount: number;
 };
 
+const EFFECTIVE_EXPIRY_AT = Prisma.sql`
+  CASE
+    WHEN b."ventanasHorarias" IS NULL
+      OR b."ventanasHorarias" = '{}'::jsonb
+      OR tw.expiry_start_minute IS NULL
+      OR tw.expiry_end_minute IS NULL
+      THEN b."fechaExpiracion"
+    ELSE (
+      (
+        (b."fechaExpiracion" AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
+        + CASE
+            WHEN tw.expiry_end_minute < tw.expiry_start_minute THEN INTERVAL '1 day'
+            ELSE INTERVAL '0 day'
+          END
+        + make_interval(mins => tw.expiry_end_minute)
+      ) AT TIME ZONE 'America/Argentina/Buenos_Aires'
+    )
+  END
+`;
+
 const AVAILABLE_CONDITION = Prisma.sql`
-  b."fechaExpiracion" >= CURRENT_TIMESTAMP
+  (${EFFECTIVE_EXPIRY_AT}) >= CURRENT_TIMESTAMP
   AND (b."maxUsos" IS NULL OR COALESCE(bs.canjeados, 0) < b."maxUsos")
+`;
+
+const IS_AVAILABLE_NOW_CONDITION = Prisma.sql`
+  CASE
+    WHEN b."ventanasHorarias" IS NULL OR b."ventanasHorarias" = '{}'::jsonb THEN (
+      array_length(b."diasValidos", 1) IS NULL
+      OR array_length(b."diasValidos", 1) = 0
+      OR ct.current_weekday = ANY(b."diasValidos")
+    )
+    ELSE (
+      (
+        tw.today_start_minute IS NOT NULL
+        AND tw.today_end_minute IS NOT NULL
+        AND CASE
+          WHEN tw.today_end_minute < tw.today_start_minute
+            THEN ct.current_minute >= tw.today_start_minute
+          ELSE ct.current_minute >= tw.today_start_minute
+            AND ct.current_minute < tw.today_end_minute
+        END
+      )
+      OR (
+        tw.previous_start_minute IS NOT NULL
+        AND tw.previous_end_minute IS NOT NULL
+        AND tw.previous_end_minute < tw.previous_start_minute
+        AND ct.current_minute < tw.previous_end_minute
+      )
+    )
+  END
 `;
 
 function parseRubroId(value: string | undefined): number | undefined {
@@ -75,12 +124,7 @@ async function _getPublicBenefitsCatalogRaw(
     : Prisma.empty;
 
   const soloHoyFilter = filters.soloHoy
-    ? Prisma.sql`AND (
-        array_length(b."diasValidos", 1) IS NULL
-        OR array_length(b."diasValidos", 1) = 0
-        OR EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int = ANY(b."diasValidos")
-      )
-      AND (${AVAILABLE_CONDITION})`
+    ? Prisma.sql`AND (${AVAILABLE_CONDITION}) AND (${IS_AVAILABLE_NOW_CONDITION})`
     : Prisma.empty;
 
   const soloDisponiblesFilter = filters.soloDisponibles
@@ -97,7 +141,14 @@ async function _getPublicBenefitsCatalogRaw(
     : Prisma.sql`b."esPublico" = true AND b."deletedAt" IS NULL`;
 
   const [raw] = await prisma.$queryRaw<[PublicBenefitsCatalogRaw]>`
-    WITH beneficio_stats_cte AS (
+    WITH current_time_cte AS (
+      SELECT
+        EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int AS current_weekday,
+        ((EXTRACT(HOUR FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int * 60)
+          + EXTRACT(MINUTE FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int) AS current_minute,
+        ((EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int + 6) % 7) AS previous_weekday
+    ),
+    beneficio_stats_cte AS (
       SELECT
         r."beneficioId",
         COUNT(*) FILTER (WHERE r.estado = 'CANJEADO')::int AS canjeados
@@ -113,6 +164,7 @@ async function _getPublicBenefitsCatalogRaw(
         b."fechaExpiracion",
         b."maxUsos",
         b."diasValidos",
+        b."ventanasHorarias",
         b."createdAt",
         COALESCE(bs.canjeados, 0) AS canjeados,
         l.nombre AS "localNombre",
@@ -125,28 +177,38 @@ async function _getPublicBenefitsCatalogRaw(
         (${AVAILABLE_CONDITION}) AS "isAvailable",
         CASE
           WHEN NOT (${AVAILABLE_CONDITION}) THEN 2
-          WHEN (
-            array_length(b."diasValidos", 1) IS NOT NULL
-            AND array_length(b."diasValidos", 1) > 0
-            AND NOT (EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int = ANY(b."diasValidos"))
-          ) THEN 1
+          WHEN NOT (${IS_AVAILABLE_NOW_CONDITION}) THEN 1
           ELSE 0
         END AS "sortRank",
         ROW_NUMBER() OVER (PARTITION BY l.id ORDER BY
           CASE
             WHEN NOT (${AVAILABLE_CONDITION}) THEN 2
-            WHEN (
-              array_length(b."diasValidos", 1) IS NOT NULL
-              AND array_length(b."diasValidos", 1) > 0
-              AND NOT (EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int = ANY(b."diasValidos"))
-            ) THEN 1
+            WHEN NOT (${IS_AVAILABLE_NOW_CONDITION}) THEN 1
             ELSE 0
           END ASC, b."createdAt" DESC
         ) AS "localPriorityIndex"
       FROM "Beneficio" b
+      CROSS JOIN current_time_cte ct
       JOIN "Local" l ON l.id = b."localId"
       LEFT JOIN "Rubro" ru ON ru.id = l."rubroId"
       LEFT JOIN beneficio_stats_cte bs ON bs."beneficioId" = b.id
+      LEFT JOIN LATERAL (
+        SELECT
+          (b."ventanasHorarias" -> CAST(ct.current_weekday AS text) ->> 'startMinute')::int AS today_start_minute,
+          (b."ventanasHorarias" -> CAST(ct.current_weekday AS text) ->> 'endMinute')::int AS today_end_minute,
+          (b."ventanasHorarias" -> CAST(ct.previous_weekday AS text) ->> 'startMinute')::int AS previous_start_minute,
+          (b."ventanasHorarias" -> CAST(ct.previous_weekday AS text) ->> 'endMinute')::int AS previous_end_minute,
+          (
+            b."ventanasHorarias"
+            -> CAST(EXTRACT(DOW FROM b."fechaExpiracion" AT TIME ZONE 'America/Argentina/Buenos_Aires')::int AS text)
+            ->> 'startMinute'
+          )::int AS expiry_start_minute,
+          (
+            b."ventanasHorarias"
+            -> CAST(EXTRACT(DOW FROM b."fechaExpiracion" AT TIME ZONE 'America/Argentina/Buenos_Aires')::int AS text)
+            ->> 'endMinute'
+          )::int AS expiry_end_minute
+      ) tw ON true
       WHERE b."esPublico" = true
         AND b."deletedAt" IS NULL
         AND b."eventoId" IS NULL
@@ -174,6 +236,7 @@ async function _getPublicBenefitsCatalogRaw(
               'fechaExpiracion', b."fechaExpiracion",
               'maxUsos', b."maxUsos",
               'diasValidos', b."diasValidos",
+              'ventanasHorarias', b."ventanasHorarias",
               'createdAt', b."createdAt",
               'canjeados', b.canjeados,
               'local', json_build_object(
@@ -227,11 +290,18 @@ export const getPublicBenefitsCatalogRaw = (
 
 export async function getFeaturedPublicBenefitsRaw(limit: number): Promise<PublicBenefitsCatalogRaw> {
   // Devolvemos hasta `limit` beneficios priorizando:
-  //   0 -> activos y aplicables hoy
-  //   1 -> activos pero no aplicables hoy (día no válido)
+  //   0 -> activos y disponibles ahora
+  //   1 -> activos pero disponibles más tarde
   //   2 -> vencidos / agotados
   const [raw] = await prisma.$queryRaw<[PublicBenefitsCatalogRaw]>`
-    WITH beneficio_stats_cte AS (
+    WITH current_time_cte AS (
+      SELECT
+        EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int AS current_weekday,
+        ((EXTRACT(HOUR FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int * 60)
+          + EXTRACT(MINUTE FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int) AS current_minute,
+        ((EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int + 6) % 7) AS previous_weekday
+    ),
+    beneficio_stats_cte AS (
       SELECT
         r."beneficioId",
         COUNT(*) FILTER (WHERE r.estado = 'CANJEADO')::int AS canjeados
@@ -248,6 +318,7 @@ export async function getFeaturedPublicBenefitsRaw(limit: number): Promise<Publi
         b."fechaExpiracion",
         b."maxUsos",
         b."diasValidos",
+        b."ventanasHorarias",
         b."createdAt",
         COALESCE(bs.canjeados, 0) AS canjeados,
         l.nombre AS "localNombre",
@@ -257,29 +328,39 @@ export async function getFeaturedPublicBenefitsRaw(limit: number): Promise<Publi
         l.lng AS "localLng",
         ru.nombre AS "localRubroNombre",
         CASE
-          WHEN (${AVAILABLE_CONDITION}) AND (
-            array_length(b."diasValidos", 1) IS NULL
-            OR array_length(b."diasValidos", 1) = 0
-            OR EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int = ANY(b."diasValidos")
-          ) THEN 0
+          WHEN (${AVAILABLE_CONDITION}) AND (${IS_AVAILABLE_NOW_CONDITION}) THEN 0
           WHEN (${AVAILABLE_CONDITION}) THEN 1
           ELSE 2
         END AS "priority",
         ROW_NUMBER() OVER (PARTITION BY l.id ORDER BY
           CASE
-            WHEN (${AVAILABLE_CONDITION}) AND (
-              array_length(b."diasValidos", 1) IS NULL
-              OR array_length(b."diasValidos", 1) = 0
-              OR EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int = ANY(b."diasValidos")
-            ) THEN 0
+            WHEN (${AVAILABLE_CONDITION}) AND (${IS_AVAILABLE_NOW_CONDITION}) THEN 0
             WHEN (${AVAILABLE_CONDITION}) THEN 1
             ELSE 2
           END ASC, b."createdAt" DESC
         ) AS "localPriorityIndex"
       FROM "Beneficio" b
+      CROSS JOIN current_time_cte ct
       JOIN "Local" l ON l.id = b."localId"
       LEFT JOIN "Rubro" ru ON ru.id = l."rubroId"
       LEFT JOIN beneficio_stats_cte bs ON bs."beneficioId" = b.id
+      LEFT JOIN LATERAL (
+        SELECT
+          (b."ventanasHorarias" -> CAST(ct.current_weekday AS text) ->> 'startMinute')::int AS today_start_minute,
+          (b."ventanasHorarias" -> CAST(ct.current_weekday AS text) ->> 'endMinute')::int AS today_end_minute,
+          (b."ventanasHorarias" -> CAST(ct.previous_weekday AS text) ->> 'startMinute')::int AS previous_start_minute,
+          (b."ventanasHorarias" -> CAST(ct.previous_weekday AS text) ->> 'endMinute')::int AS previous_end_minute,
+          (
+            b."ventanasHorarias"
+            -> CAST(EXTRACT(DOW FROM b."fechaExpiracion" AT TIME ZONE 'America/Argentina/Buenos_Aires')::int AS text)
+            ->> 'startMinute'
+          )::int AS expiry_start_minute,
+          (
+            b."ventanasHorarias"
+            -> CAST(EXTRACT(DOW FROM b."fechaExpiracion" AT TIME ZONE 'America/Argentina/Buenos_Aires')::int AS text)
+            ->> 'endMinute'
+          )::int AS expiry_end_minute
+      ) tw ON true
       WHERE b."esPublico" = true
         AND b."deletedAt" IS NULL
         AND b."eventoId" IS NULL
@@ -302,6 +383,7 @@ export async function getFeaturedPublicBenefitsRaw(limit: number): Promise<Publi
               'fechaExpiracion', b."fechaExpiracion",
               'maxUsos', b."maxUsos",
               'diasValidos', b."diasValidos",
+              'ventanasHorarias', b."ventanasHorarias",
               'createdAt', b."createdAt",
               'canjeados', b.canjeados,
               'local', json_build_object(
@@ -338,12 +420,7 @@ async function _getFilteredLocalesForPublicBenefitsRaw(
     : Prisma.empty;
 
   const soloHoyFilter = filters.soloHoy
-    ? Prisma.sql`AND (
-        array_length(b."diasValidos", 1) IS NULL
-        OR array_length(b."diasValidos", 1) = 0
-        OR EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int = ANY(b."diasValidos")
-      )
-      AND (${AVAILABLE_CONDITION})`
+    ? Prisma.sql`AND (${AVAILABLE_CONDITION}) AND (${IS_AVAILABLE_NOW_CONDITION})`
     : Prisma.empty;
 
   const soloDisponiblesFilter = filters.soloDisponibles
@@ -359,7 +436,14 @@ async function _getFilteredLocalesForPublicBenefitsRaw(
     : Prisma.sql`b."esPublico" = true AND b."deletedAt" IS NULL`;
 
   return prisma.$queryRaw<PublicBenefitsLocaleRaw[]>`
-    WITH beneficio_stats_cte AS (
+    WITH current_time_cte AS (
+      SELECT
+        EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int AS current_weekday,
+        ((EXTRACT(HOUR FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int * 60)
+          + EXTRACT(MINUTE FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int) AS current_minute,
+        ((EXTRACT(DOW FROM CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::int + 6) % 7) AS previous_weekday
+    ),
+    beneficio_stats_cte AS (
       SELECT
         r."beneficioId",
         COUNT(*) FILTER (WHERE r.estado = 'CANJEADO')::int AS canjeados
@@ -373,8 +457,26 @@ async function _getFilteredLocalesForPublicBenefitsRaw(
         b.id,
         b."localId"
       FROM "Beneficio" b
+      CROSS JOIN current_time_cte ct
       JOIN "Local" l ON l.id = b."localId"
       LEFT JOIN beneficio_stats_cte bs ON bs."beneficioId" = b.id
+      LEFT JOIN LATERAL (
+        SELECT
+          (b."ventanasHorarias" -> CAST(ct.current_weekday AS text) ->> 'startMinute')::int AS today_start_minute,
+          (b."ventanasHorarias" -> CAST(ct.current_weekday AS text) ->> 'endMinute')::int AS today_end_minute,
+          (b."ventanasHorarias" -> CAST(ct.previous_weekday AS text) ->> 'startMinute')::int AS previous_start_minute,
+          (b."ventanasHorarias" -> CAST(ct.previous_weekday AS text) ->> 'endMinute')::int AS previous_end_minute,
+          (
+            b."ventanasHorarias"
+            -> CAST(EXTRACT(DOW FROM b."fechaExpiracion" AT TIME ZONE 'America/Argentina/Buenos_Aires')::int AS text)
+            ->> 'startMinute'
+          )::int AS expiry_start_minute,
+          (
+            b."ventanasHorarias"
+            -> CAST(EXTRACT(DOW FROM b."fechaExpiracion" AT TIME ZONE 'America/Argentina/Buenos_Aires')::int AS text)
+            ->> 'endMinute'
+          )::int AS expiry_end_minute
+      ) tw ON true
       WHERE b."esPublico" = true
         AND b."deletedAt" IS NULL
         AND b."eventoId" IS NULL

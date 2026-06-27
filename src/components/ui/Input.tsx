@@ -1,28 +1,30 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { forwardRef, useId, type InputHTMLAttributes } from "react";
+import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from "react";
+import FieldHelp from "@/components/ui/FieldHelp";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  labelHelp?: ReactNode;
   error?: string;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, id, required, ...props }, ref) => {
+  ({ className, label, labelHelp, error, id, required, ...props }, ref) => {
     const generatedId = useId();
     const inputId = id || generatedId;
 
     return (
       <div className="w-full">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="mb-1 block text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm"
-          >
-            {label}
-            {required ? <span className="ml-1 text-danger">*</span> : null}
-          </label>
+          <div className="mb-1 flex items-center gap-1.5">
+            <label htmlFor={inputId} className="block text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
+              {label}
+              {required ? <span className="ml-1 text-danger">*</span> : null}
+            </label>
+            {labelHelp ? <FieldHelp label={label} content={labelHelp} /> : null}
+          </div>
         )}
         <input
           ref={ref}

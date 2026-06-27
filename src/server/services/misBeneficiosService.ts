@@ -10,8 +10,11 @@ import {
   getCouponBlockMessage,
   ReclamoEffectiveStatus,
 } from "@/lib/couponStatus";
+import { normalizeBeneficioTimeWindows } from "@/lib/beneficioSchedule";
 
 function mapReclamoRow(r: ReclamoStatusRow) {
+  const normalizedWindows = normalizeBeneficioTimeWindows(r.beneficioVentanasHorarias, r.beneficioDiasValidos);
+
   const reclamoState = evaluateReclamoState({
     estado: r.estado,
     fechaExpiracion: r.beneficioFechaExpiracion,
@@ -19,6 +22,7 @@ function mapReclamoRow(r: ReclamoStatusRow) {
     maxUsos: r.beneficioMaxUsos,
     canjeados: r.beneficioCanjeados,
     diasValidos: r.beneficioDiasValidos,
+    ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
   });
 
   return {
@@ -29,17 +33,18 @@ function mapReclamoRow(r: ReclamoStatusRow) {
       reclamoState.canGenerateQr ||
       (reclamoState.status !== ReclamoEffectiveStatus.PENDIENTE &&
         reclamoState.status !== ReclamoEffectiveStatus.AGOTADO)
-      ? null
-      : getCouponBlockMessage(reclamoState.blockReason, {
-          diasValidos: r.beneficioDiasValidos,
-          context: "redeem",
-        }),
+        ? null
+        : getCouponBlockMessage(reclamoState.blockReason, {
+            diasValidos: r.beneficioDiasValidos,
+            context: "redeem",
+            ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
+          }),
     fechaReclamo: r.fechaReclamo,
     fechaCanje: r.fechaCanje,
-    beneficio: {
-      descripcion: r.beneficioDescripcion,
-      fechaExpiracion: r.beneficioFechaExpiracion,
-      diasValidos: r.beneficioDiasValidos,
+      beneficio: {
+        descripcion: r.beneficioDescripcion,
+        fechaExpiracion: r.beneficioFechaExpiracion,
+        diasValidos: r.beneficioDiasValidos,
       local: { nombre: r.localNombre, id: r.localId, logoV: r.localLogoV, rubroNombre: r.localRubroNombre, direccion: r.localDireccion },
     },
   };

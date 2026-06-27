@@ -1,4 +1,5 @@
 import { createSession } from "@/lib/auth";
+import { normalizeBeneficioTimeWindows } from "@/lib/beneficioSchedule";
 import { SESSION_DURATION } from "@/lib/constants";
 import { EstadoReclamo } from "@/generated/prisma/client";
 import { evaluateBeneficioState, getCouponBlockError } from "@/lib/couponStatus";
@@ -35,6 +36,14 @@ function hasNombreCompleto(value: unknown): boolean {
   return value.trim().length > 0;
 }
 
+function getNormalizedVentanasHorarias(
+  ventanasHorarias: unknown,
+  diasValidos: number[],
+) {
+  const normalized = normalizeBeneficioTimeWindows(ventanasHorarias, diasValidos);
+  return normalized.ok ? normalized.value : null;
+}
+
 export async function ensureReclamoForCliente(
   beneficioId: string,
   clienteId: string
@@ -48,6 +57,7 @@ export async function ensureReclamoForCliente(
     maxUsos: beneficio.maxUsos,
     canjeados: beneficio.reclamos.length,
     diasValidos: beneficio.diasValidos as number[],
+    ventanasHorarias: getNormalizedVentanasHorarias(beneficio.ventanasHorarias, beneficio.diasValidos as number[]),
   });
 
   if (!beneficioState.canClaim) return;
@@ -123,12 +133,15 @@ async function redeemBeneficioDirectForClienteTx(
     maxUsos: beneficio.maxUsos,
     canjeados: beneficio.reclamos.length,
     diasValidos: beneficio.diasValidos as number[],
+    ventanasHorarias: getNormalizedVentanasHorarias(beneficio.ventanasHorarias, beneficio.diasValidos as number[]),
   });
+  const ventanasHorarias = getNormalizedVentanasHorarias(beneficio.ventanasHorarias, beneficio.diasValidos as number[]);
 
   if (!beneficioState.canRedeemToday) {
     const error = getCouponBlockError(beneficioState.redeemBlockReason, {
       diasValidos: beneficio.diasValidos as number[],
       context: "redeem",
+      ventanasHorarias,
     });
     if (!error) {
       return { ok: false, status: 400, error: "Este cupón no está disponible", code: "INVALID_COUPON" };
@@ -256,12 +269,15 @@ export async function createAnonymousReclamoFlow(
     maxUsos: beneficio.maxUsos,
     canjeados: beneficio.reclamos.length,
     diasValidos: beneficio.diasValidos as number[],
+    ventanasHorarias: getNormalizedVentanasHorarias(beneficio.ventanasHorarias, beneficio.diasValidos as number[]),
   });
+  const ventanasHorarias = getNormalizedVentanasHorarias(beneficio.ventanasHorarias, beneficio.diasValidos as number[]);
 
   if (!beneficioState.canClaim) {
     const error = getCouponBlockError(beneficioState.claimBlockReason, {
       diasValidos: beneficio.diasValidos as number[],
       context: "claim",
+      ventanasHorarias,
     });
     return { ok: false, status: error!.status, error: error!.error, code: error!.code };
   }

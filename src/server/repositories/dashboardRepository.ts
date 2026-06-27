@@ -24,6 +24,7 @@ export type DashboardRaw = {
     fechaExpiracion: string;
     maxUsos: number | null;
     diasValidos: number[];
+    ventanasHorarias: Prisma.JsonValue | null;
     deletedAt: string | null;
     totalReclamos: number;
     canjeados: number;
@@ -125,6 +126,7 @@ export async function getDashboardRaw(
           b."fechaExpiracion",
           b."maxUsos",
           b."diasValidos",
+          b."ventanasHorarias",
           b."deletedAt",
           b."createdAt",
           COALESCE(bs."totalReclamos", 0) AS "totalReclamos",
@@ -184,6 +186,7 @@ export async function getDashboardRaw(
               'fechaExpiracion', b."fechaExpiracion",
               'maxUsos', b."maxUsos",
               'diasValidos', b."diasValidos",
+              'ventanasHorarias', b."ventanasHorarias",
               'deletedAt', b."deletedAt",
               'totalReclamos', b."totalReclamos",
               'canjeados', b.canjeados

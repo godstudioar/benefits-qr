@@ -1,5 +1,10 @@
 import { EstadoReclamo, MedioPago, Prisma } from "@/generated/prisma/client";
 import { getCurrentISODateInArgentina } from "@/lib/argentinaTime";
+import {
+  hasBeneficioTimeWindows,
+  normalizeBeneficioTimeWindows,
+  type BeneficioTimeWindows,
+} from "@/lib/beneficioSchedule";
 import { prisma } from "@/lib/prisma";
 import { findEventoById } from "@/server/repositories/eventosRepository";
 import {
@@ -29,6 +34,7 @@ type BeneficioWritableInput = {
   fechaExpiracion?: unknown;
   maxUsos?: unknown;
   diasValidos?: unknown;
+  ventanasHorarias?: unknown;
   esPublico?: unknown;
   mediosPago?: unknown;
   esAcumulable?: unknown;
@@ -42,6 +48,7 @@ type NormalizedBeneficioInput = Partial<{
   fechaExpiracion: Date;
   maxUsos: number | null;
   diasValidos: number[];
+  ventanasHorarias: BeneficioTimeWindows | null;
   esPublico: boolean;
   mediosPago: MedioPago[];
   esAcumulable: boolean;
@@ -70,6 +77,17 @@ function normalizeDiasValidos(value: unknown) {
   return value.filter(
     (day): day is number => typeof day === "number" && Number.isInteger(day) && day >= 0 && day <= 6,
   );
+}
+
+function createBeneficioExpiryDate(isoDate: string, ventanasHorarias: BeneficioTimeWindows | null) {
+  // Persist scheduled coupons at the start of the Argentina-local day so the
+  // evaluator remains the single source of truth for final-window carryover.
+  const timeSuffix = hasBeneficioTimeWindows(ventanasHorarias) ? "00:00:00" : "23:59:59";
+  return new Date(`${isoDate}T${timeSuffix}-03:00`);
+}
+
+function createTimeWindowsError(code: string, message: string, field: "ventanasHorarias") {
+  return createServiceError(400, code, message, field);
 }
 
 function normalizeBeneficioInput(
@@ -101,7 +119,7 @@ function normalizeBeneficioInput(
       return createServiceError(400, "INVALID_FECHA_EXPIRACION", "Fecha de expiración requerida", "fechaExpiracion");
     }
 
-    const expiryDate = new Date(`${input.fechaExpiracion}T23:59:59-03:00`);
+    const expiryDate = new Date(`${input.fechaExpiracion}T00:00:00-03:00`);
     if (Number.isNaN(expiryDate.getTime())) {
       return createServiceError(400, "INVALID_FECHA_EXPIRACION", "Fecha de expiración inválida", "fechaExpiracion");
     }
@@ -142,6 +160,16 @@ function normalizeBeneficioInput(
 
   if (hasOwnInputField(input, "diasValidos")) {
     normalized.diasValidos = normalizeDiasValidos(input.diasValidos);
+  }
+
+  if (hasOwnInputField(input, "ventanasHorarias")) {
+    const normalizedWindows = normalizeBeneficioTimeWindows(input.ventanasHorarias, normalized.diasValidos);
+
+    if (!normalizedWindows.ok) {
+      return createTimeWindowsError(normalizedWindows.code, normalizedWindows.message, normalizedWindows.field);
+    }
+
+    normalized.ventanasHorarias = normalizedWindows.value;
   }
 
   if (hasOwnInputField(input, "esPublico")) {
@@ -245,11 +273,24 @@ export async function createBeneficioFlow(
     return normalized;
   }
 
+  const diasValidos = normalized.data.diasValidos ?? [];
+  const normalizedWindows = normalizeBeneficioTimeWindows(normalized.data.ventanasHorarias ?? null, diasValidos);
+
+  if (!normalizedWindows.ok) {
+    return createTimeWindowsError(normalizedWindows.code, normalizedWindows.message, normalizedWindows.field);
+  }
+
+  const fechaExpiracion = createBeneficioExpiryDate(
+    getCurrentISODateInArgentina(normalized.data.fechaExpiracion!),
+    normalizedWindows.value,
+  );
+
   const beneficio = await createBeneficio({
     descripcion: normalized.data.descripcion!,
-    fechaExpiracion: eventoFechaFin ?? normalized.data.fechaExpiracion!,
+    fechaExpiracion: eventoFechaFin ?? fechaExpiracion,
     maxUsos: normalized.data.maxUsos ?? null,
-    diasValidos: eventoId ? [] : (normalized.data.diasValidos ?? []),
+    diasValidos: eventoId ? [] : diasValidos,
+    ventanasHorarias: eventoId ? null : normalizedWindows.value,
     esPublico: eventoId ? false : (normalized.data.esPublico ?? false),
     mediosPago: normalized.data.mediosPago ?? [],
     esAcumulable: normalized.data.esAcumulable ?? true,
@@ -273,6 +314,7 @@ export async function getBeneficioEditPageData(id: string, localId: string) {
   const activeReclamos = beneficio.reclamos.filter(
     (reclamo) => reclamo.estado === EstadoReclamo.CANJEADO || reclamo.estado === EstadoReclamo.PENDIENTE,
   ).length;
+  const normalizedWindows = normalizeBeneficioTimeWindows(beneficio.ventanasHorarias, beneficio.diasValidos);
 
   return {
     id: beneficio.id,
@@ -281,6 +323,7 @@ export async function getBeneficioEditPageData(id: string, localId: string) {
       fechaExpiracion: getCurrentISODateInArgentina(beneficio.fechaExpiracion),
       maxUsos: beneficio.maxUsos,
       diasValidos: beneficio.diasValidos,
+      ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
       esPublico: beneficio.esPublico,
       mediosPago: beneficio.mediosPago,
       esAcumulable: beneficio.esAcumulable,
@@ -315,9 +358,31 @@ export async function updateBeneficioFlow(
           return createServiceError(404, "BENEFICIO_NOT_FOUND", "Cupón no encontrado");
         }
 
+        const currentDiasValidos = beneficio.diasValidos as number[];
+        const resolvedDiasValidos = normalized.data.diasValidos ?? currentDiasValidos;
+        const resolvedWindows = normalizeBeneficioTimeWindows(
+          normalized.data.ventanasHorarias === undefined ? beneficio.ventanasHorarias : normalized.data.ventanasHorarias,
+          resolvedDiasValidos,
+        );
+
+        if (!resolvedWindows.ok) {
+          return createTimeWindowsError(resolvedWindows.code, resolvedWindows.message, resolvedWindows.field);
+        }
+
+        if (normalized.data.ventanasHorarias !== undefined) {
+          normalized.data.ventanasHorarias = resolvedWindows.value;
+        }
+
+        if (normalized.data.fechaExpiracion !== undefined || normalized.data.ventanasHorarias !== undefined) {
+          const expiryIsoDate = getCurrentISODateInArgentina(
+            normalized.data.fechaExpiracion ?? beneficio.fechaExpiracion,
+          );
+          normalized.data.fechaExpiracion = createBeneficioExpiryDate(expiryIsoDate, resolvedWindows.value);
+        }
+
         if (
           normalized.data.fechaExpiracion &&
-          normalized.data.fechaExpiracion.getTime() < beneficio.fechaExpiracion.getTime()
+          getCurrentISODateInArgentina(normalized.data.fechaExpiracion) < getCurrentISODateInArgentina(beneficio.fechaExpiracion)
         ) {
           const activeReclamos = await countBeneficioReclamosByEstados(tx, id, [
             EstadoReclamo.PENDIENTE,

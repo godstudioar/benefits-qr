@@ -51,11 +51,7 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
   },
 ];
 
-export function getDashboardActiveKey(
-  pathname: string,
-  hash: string
-): DashboardNavKey {
-  void hash;
+export function getDashboardActiveKey(pathname: string): DashboardNavKey {
   if (pathname === "/dashboard/escanear") return "escanear";
   if (pathname === "/dashboard/beneficios/nuevo") return "crear";
   if (pathname.startsWith("/dashboard/beneficios/")) return "inicio";

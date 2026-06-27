@@ -134,19 +134,19 @@ export default function EscanearPage() {
   }
 
   return (
-    <main className="mx-auto max-w-xl px-4 pt-6 pb-8 sm:px-6 sm:pt-8 lg:max-w-lg lg:pt-7 2xl:max-w-xl 2xl:pt-8">
+    <main className="mx-auto w-full max-w-3xl">
       <SectionHeader
         eyebrow="Escanear cupón"
         title="Escanear QR"
         description="Escaneá el código del cliente para confirmar el canje del cupón."
         align="left"
-        className="mb-6 sm:mb-8 lg:mb-6 2xl:mb-8"
+        titleAs="h1"
       />
 
-      <Card className="p-6 lg:p-5 2xl:p-6">
+      <Card className="p-6">
         {state === "scanning" && (
-          <div className="space-y-4 lg:space-y-3.5 2xl:space-y-4">
-            <p className="flex items-center justify-center gap-2 text-center text-sm text-text-muted lg:text-[13px] 2xl:text-sm">
+          <div className="space-y-4" role="status" aria-live="polite" aria-atomic="true">
+            <p className="flex items-center justify-center gap-2 text-center text-sm text-text-muted">
               <QrCode className="h-4 w-4 text-primary" aria-hidden="true" />
               Apuntá la cámara al código QR del cliente
             </p>
@@ -155,7 +155,7 @@ export default function EscanearPage() {
         )}
 
         {state === "confirming" && (
-          <div className="py-8 text-center lg:py-7 2xl:py-8">
+          <div className="py-8 text-center" role="status" aria-live="polite" aria-atomic="true">
             <div
               className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
                 STATUS_CONFIG.confirming.iconBgClassName
@@ -166,16 +166,16 @@ export default function EscanearPage() {
                 aria-hidden="true"
               />
             </div>
-             <h2 className="mb-2 text-lg font-semibold text-text-primary lg:text-base 2xl:text-lg">
-              {STATUS_CONFIG.confirming.title}
-            </h2>
-             <p className="mb-6 text-sm text-text-muted lg:mb-5 lg:text-[13px] 2xl:mb-6 2xl:text-sm">
-              {STATUS_CONFIG.confirming.description}
-            </p>
-             <div className="flex justify-center gap-3 lg:gap-2.5 2xl:gap-3">
-              <Button variant="secondary" onClick={reset}>
-                Cancelar
-              </Button>
+             <h2 className="mb-2 text-lg font-semibold text-text-primary">
+               {STATUS_CONFIG.confirming.title}
+             </h2>
+             <p className="mb-6 text-sm text-text-muted">
+               {STATUS_CONFIG.confirming.description}
+             </p>
+             <div className="flex justify-center gap-3">
+               <Button variant="secondary" onClick={reset}>
+                 Cancelar
+               </Button>
               <Button onClick={handleCanjear} loading={loading}>
                 Confirmar canje
               </Button>
@@ -184,7 +184,7 @@ export default function EscanearPage() {
         )}
 
         {state === "success" && (
-           <div className="py-8 text-center lg:py-7 2xl:py-8">
+            <div className="py-8 text-center" role="status" aria-live="polite" aria-atomic="true">
             <div
               className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
                 STATUS_CONFIG.success.iconBgClassName
@@ -195,10 +195,10 @@ export default function EscanearPage() {
                 aria-hidden="true"
               />
             </div>
-             <h2 className="mb-2 text-lg font-semibold text-text-primary lg:text-base 2xl:text-lg">
-              {STATUS_CONFIG.success.title}
-            </h2>
-             <p className="mb-4 text-sm text-text-muted lg:text-[13px] 2xl:text-sm">{STATUS_CONFIG.success.description}</p>
+             <h2 className="mb-2 text-lg font-semibold text-text-primary">
+               {STATUS_CONFIG.success.title}
+             </h2>
+             <p className="mb-4 text-sm text-text-muted">{STATUS_CONFIG.success.description}</p>
             <Button onClick={reset} className="mt-4">
               Escanear otro
             </Button>
@@ -206,7 +206,7 @@ export default function EscanearPage() {
         )}
 
         {state === "error" && (
-           <div className="py-8 text-center lg:py-7 2xl:py-8">
+            <div className="py-8 text-center" role="alert" aria-live="assertive" aria-atomic="true">
             <div
               className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
                 STATUS_CONFIG.error.iconBgClassName
@@ -217,9 +217,9 @@ export default function EscanearPage() {
                 aria-hidden="true"
               />
             </div>
-             <h2 className="mb-2 text-lg font-semibold text-text-primary lg:text-base 2xl:text-lg">{STATUS_CONFIG.error.title}</h2>
-             <p className="mb-2 text-sm text-text-muted lg:text-[13px] 2xl:text-sm">{STATUS_CONFIG.error.description}</p>
-             <p className="mb-4 text-sm text-danger lg:text-[13px] 2xl:text-sm">{message}</p>
+             <h2 className="mb-2 text-lg font-semibold text-text-primary">{STATUS_CONFIG.error.title}</h2>
+             <p className="mb-2 text-sm text-text-muted">{STATUS_CONFIG.error.description}</p>
+             <p className="mb-4 text-sm text-danger">{message}</p>
             <Button onClick={reset}>Intentar de nuevo</Button>
           </div>
         )}

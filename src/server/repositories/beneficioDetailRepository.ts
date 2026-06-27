@@ -1,5 +1,6 @@
 import { MedioPago, EstadoReclamo } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 
 export type BeneficioDetailRaw = {
   beneficio: {
@@ -8,6 +9,7 @@ export type BeneficioDetailRaw = {
     fechaExpiracion: string;
     maxUsos: number | null;
     diasValidos: number[];
+    ventanasHorarias: Prisma.JsonValue | null;
     deletedAt: string | null;
     localId: string;
     esPublico: boolean;
@@ -41,7 +43,7 @@ export async function getBeneficioDetailRaw(
   const [raw] = await prisma.$queryRaw<[BeneficioDetailRaw]>`
     WITH
       beneficio_cte AS (
-        SELECT id, descripcion, "fechaExpiracion", "maxUsos", "diasValidos", "deletedAt", "localId", "esPublico", "mediosPago", "esAcumulable", "condicionesExtra"
+        SELECT id, descripcion, "fechaExpiracion", "maxUsos", "diasValidos", "ventanasHorarias", "deletedAt", "localId", "esPublico", "mediosPago", "esAcumulable", "condicionesExtra"
         FROM "Beneficio"
         WHERE id = ${beneficioId}
           AND "localId" = ${localId}

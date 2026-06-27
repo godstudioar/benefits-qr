@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import {
   DASHBOARD_NAV_ITEMS,
   getDashboardActiveKey,
@@ -11,24 +10,14 @@ import { cn } from "@/lib/utils";
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
-  const [hash, setHash] = useState("");
-
-  useEffect(() => {
-    const syncHash = () => setHash(window.location.hash);
-    syncHash();
-    window.addEventListener("hashchange", syncHash);
-
-    return () => window.removeEventListener("hashchange", syncHash);
-  }, []);
-
-  const activeKey = getDashboardActiveKey(pathname, hash);
+  const activeKey = getDashboardActiveKey(pathname);
 
   return (
     <nav
       aria-label="Navegación del dashboard"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-border-default/80 bg-surface/95 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(16,24,40,0.08)]"
+      className="fixed bottom-0 left-1/2 z-50 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-t-[1.75rem] border border-border-default/80 bg-surface/95 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(16,24,40,0.08)] sm:bottom-4 sm:w-[calc(100%-2rem)] sm:max-w-lg sm:rounded-[1.75rem]"
     >
-      <ul className="mx-auto grid max-w-md grid-cols-5 items-end gap-2">
+      <ul className="grid grid-cols-5 items-end gap-2">
         {DASHBOARD_NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = activeKey === item.key;

@@ -1,3 +1,4 @@
+import { normalizeBeneficioTimeWindows } from "@/lib/beneficioSchedule";
 import { evaluateBeneficioState, type BeneficioEffectiveStatus } from "@/lib/couponStatus";
 import { parseRawDbTimestamp } from "@/lib/dates";
 import { getBeneficioAvailabilityPresentation } from "@/lib/statusPresentation";
@@ -34,26 +35,31 @@ export type PublicBenefitCardData = {
 
 function hydratePublicBenefits(raw: PublicBenefitsCatalogRaw) {
   return (raw.beneficios ?? []).map((beneficio) => {
+    const { ventanasHorarias: rawVentanasHorarias, ...restBeneficio } = beneficio;
     const fechaExpiracion = parseRawDbTimestamp(beneficio.fechaExpiracion);
     const createdAt = parseRawDbTimestamp(beneficio.createdAt);
+    const normalizedWindows = normalizeBeneficioTimeWindows(rawVentanasHorarias, beneficio.diasValidos);
     const benefitState = evaluateBeneficioState({
       fechaExpiracion,
       maxUsos: beneficio.maxUsos,
       canjeados: beneficio.canjeados,
       diasValidos: beneficio.diasValidos,
+      ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
     });
 
     return {
-      ...beneficio,
+      ...restBeneficio,
       fechaExpiracion,
       createdAt,
       effectiveStatus: benefitState.status,
       availability: getBeneficioAvailabilityPresentation({
         status: benefitState.status,
         isWrongDay: benefitState.isWrongDay,
+        isOutsideTimeWindow: benefitState.isOutsideTimeWindow,
         diasValidos: beneficio.diasValidos,
+        ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
       }),
-    } satisfies PublicBenefitCardData;
+      } satisfies PublicBenefitCardData;
   });
 }
 
