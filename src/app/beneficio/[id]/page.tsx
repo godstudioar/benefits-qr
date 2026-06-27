@@ -60,6 +60,7 @@ export default async function BeneficioPublicoPage({
       condicionesExtra: true,
       local: { select: { nombre: true, logoUrl: true, direccion: true } },
       reclamos: { where: { estado: EstadoReclamo.CANJEADO }, select: { id: true } },
+      evento: { select: { slug: true, fechaInicio: true } },
     },
   });
 
@@ -92,6 +93,7 @@ export default async function BeneficioPublicoPage({
     canjeados: beneficio.reclamos.length,
     diasValidos,
     ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
+    eventoFechaInicio: beneficio.evento?.fechaInicio ?? null,
   });
   const diasValidosOrdenados = sortDiasValidos(diasValidos);
   const localName = beneficio.local.nombre ?? "Local adherido";
@@ -102,6 +104,7 @@ export default async function BeneficioPublicoPage({
     status: beneficioState.status,
     isWrongDay: beneficioState.isWrongDay,
     isOutsideTimeWindow: beneficioState.isOutsideTimeWindow,
+    isEventoNotStarted: beneficioState.isEventoNotStarted,
     diasValidos,
     ventanasHorarias: normalizedWindows.ok ? normalizedWindows.value : null,
   });
@@ -118,13 +121,13 @@ export default async function BeneficioPublicoPage({
       <div className="pointer-events-none absolute -bottom-40 -right-40 hidden h-[500px] w-[500px] rounded-full bg-primary-soft/80 blur-3xl sm:block" />
 
       <LinkButton
-        href="/beneficios"
+        href={beneficio.evento ? `/eventos/${beneficio.evento.slug}` : "/beneficios"}
         variant="subtle"
         size="sm"
         className="absolute top-5 left-5 z-40 sm:top-6 sm:left-6"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Beneficios
+        {beneficio.evento ? "Evento" : "Beneficios"}
       </LinkButton>
 
       {clienteSession ? (

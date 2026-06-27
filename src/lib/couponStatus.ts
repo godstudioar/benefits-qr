@@ -51,6 +51,7 @@ export const CouponBlockReason = {
   BENEFICIO_MAX_USOS_REACHED: "BENEFICIO_MAX_USOS_REACHED",
   BENEFICIO_INVALID_DAY: "BENEFICIO_INVALID_DAY",
   BENEFICIO_OUTSIDE_TIME_WINDOW: "BENEFICIO_OUTSIDE_TIME_WINDOW",
+  EVENTO_NOT_STARTED: "EVENTO_NOT_STARTED",
   RECLAMO_CANCELLED: "RECLAMO_CANCELLED",
   RECLAMO_ALREADY_REDEEMED: "RECLAMO_ALREADY_REDEEMED",
 } as const;
@@ -261,6 +262,10 @@ export function getCouponBlockMessage(
     return getCouponInvalidDayMessage(diasValidos, context === "claim" ? "claim" : "redeem");
   }
 
+  if (reason === CouponBlockReason.EVENTO_NOT_STARTED) {
+    return "Este cupón todavía no está disponible. El evento aún no comenzó";
+  }
+
   if (reason === CouponBlockReason.BENEFICIO_OUTSIDE_TIME_WINDOW) {
     const nextWindow = getNextTimeWindowCopy(ventanasHorarias, referenceDate);
 
@@ -309,6 +314,7 @@ export function evaluateBeneficioState({
   canjeados,
   diasValidos,
   ventanasHorarias = null,
+  eventoFechaInicio = null,
   referenceDate = new Date(),
 }: {
   fechaExpiracion: Date | string;
@@ -317,14 +323,17 @@ export function evaluateBeneficioState({
   canjeados: number;
   diasValidos: number[];
   ventanasHorarias?: BeneficioTimeWindows | null;
+  eventoFechaInicio?: Date | string | null;
   referenceDate?: Date;
 }) {
   const fechaExpiracionDate = getEffectiveExpiryDate(fechaExpiracion, ventanasHorarias);
   const deletedAtDate = toDate(deletedAt);
+  const eventoFechaInicioDate = toDate(eventoFechaInicio);
   const todayIndex = getCurrentDayInArgentina(referenceDate);
   const timeWindowState = evaluateTimeWindowState(ventanasHorarias, referenceDate);
   const isDeleted = deletedAtDate !== null;
   const isExpired = fechaExpiracionDate !== null && fechaExpiracionDate < referenceDate;
+  const isEventoNotStarted = eventoFechaInicioDate !== null && eventoFechaInicioDate > referenceDate;
   const isAgotado = maxUsos !== null && canjeados >= maxUsos;
   const isCarryoverWindowActive =
     timeWindowState.hasWindows &&
@@ -348,9 +357,11 @@ export function evaluateBeneficioState({
       ? CouponBlockReason.BENEFICIO_EXPIRED
       : isAgotado
         ? CouponBlockReason.BENEFICIO_MAX_USOS_REACHED
-        // MVP policy: claiming stays permissive outside time windows so customers
-        // can secure the coupon now and redeem it later during the valid window.
-        : CouponBlockReason.NONE;
+        : isEventoNotStarted
+          ? CouponBlockReason.EVENTO_NOT_STARTED
+          // MVP policy: claiming stays permissive outside time windows so customers
+          // can secure the coupon now and redeem it later during the valid window.
+          : CouponBlockReason.NONE;
 
   const redeemBlockReason = isDeleted
     ? CouponBlockReason.BENEFICIO_UNAVAILABLE
@@ -358,17 +369,20 @@ export function evaluateBeneficioState({
       ? CouponBlockReason.BENEFICIO_EXPIRED
       : isAgotado
         ? CouponBlockReason.BENEFICIO_MAX_USOS_REACHED
-        : isWrongDay
-          ? CouponBlockReason.BENEFICIO_INVALID_DAY
-          : isOutsideTimeWindow
-            ? CouponBlockReason.BENEFICIO_OUTSIDE_TIME_WINDOW
-          : CouponBlockReason.NONE;
+        : isEventoNotStarted
+          ? CouponBlockReason.EVENTO_NOT_STARTED
+          : isWrongDay
+            ? CouponBlockReason.BENEFICIO_INVALID_DAY
+            : isOutsideTimeWindow
+              ? CouponBlockReason.BENEFICIO_OUTSIDE_TIME_WINDOW
+              : CouponBlockReason.NONE;
 
   return {
     status,
     isDeleted,
     isExpired,
     isAgotado,
+    isEventoNotStarted,
     isWrongDay,
     isOutsideTimeWindow,
     canClaim: claimBlockReason === CouponBlockReason.NONE,
@@ -387,6 +401,7 @@ export function evaluateReclamoState({
   canjeados,
   diasValidos,
   ventanasHorarias = null,
+  eventoFechaInicio = null,
   referenceDate = new Date(),
 }: {
   estado: ReclamoPersistedStatus | string;
@@ -396,6 +411,7 @@ export function evaluateReclamoState({
   canjeados: number;
   diasValidos: number[];
   ventanasHorarias?: BeneficioTimeWindows | null;
+  eventoFechaInicio?: Date | string | null;
   referenceDate?: Date;
 }) {
   const beneficioState = evaluateBeneficioState({
@@ -405,6 +421,7 @@ export function evaluateReclamoState({
     canjeados,
     diasValidos,
     ventanasHorarias,
+    eventoFechaInicio,
     referenceDate,
   });
 
@@ -443,6 +460,16 @@ export function evaluateReclamoState({
       ...beneficioState,
       status: ReclamoEffectiveStatus.AGOTADO,
       blockReason: CouponBlockReason.BENEFICIO_MAX_USOS_REACHED,
+      canGenerateQr: false,
+      canRedeem: false,
+    };
+  }
+
+  if (beneficioState.isEventoNotStarted) {
+    return {
+      ...beneficioState,
+      status: ReclamoEffectiveStatus.PENDIENTE,
+      blockReason: CouponBlockReason.EVENTO_NOT_STARTED,
       canGenerateQr: false,
       canRedeem: false,
     };

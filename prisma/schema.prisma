@@ -58,11 +58,14 @@ model Beneficio {
   local             Local       @relation(fields: [localId], references: [id], onDelete: Cascade)
   createdAt         DateTime    @default(now())
   deletedAt         DateTime?
+  eventoId          String?
+  evento            Evento?     @relation(fields: [eventoId], references: [id])
   reclamos          Reclamo[]
 
   @@index([localId])
   @@index([deletedAt])
   @@index([esPublico, deletedAt])
+  @@index([eventoId, deletedAt])
 }
 
 model Cliente {
@@ -125,6 +128,26 @@ model Session {
   createdAt DateTime @default(now())
 
   @@index([expiresAt])
+}
+
+model Evento {
+  id          String      @id @default(cuid())
+  nombre      String
+  slug        String      @unique
+  descripcion String?
+  imageUrl    String?
+  fechaInicio DateTime
+  fechaFin    DateTime
+  ubicacion   String?
+  lat         Float?
+  lng         Float?
+  placeId     String?
+  activo      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  beneficios  Beneficio[]
+
+  @@index([fechaInicio])
+  @@index([activo, fechaInicio])
 }
 
 model SitePageview {

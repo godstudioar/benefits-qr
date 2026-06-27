@@ -62,6 +62,7 @@ export async function generateReclamoQr(
       reclamo.beneficio.ventanasHorarias,
       reclamo.beneficio.diasValidos as number[],
     ),
+    eventoFechaInicio: reclamo.beneficio.evento?.fechaInicio ?? null,
   });
   const ventanasHorarias = getNormalizedVentanasHorarias(
     reclamo.beneficio.ventanasHorarias,
@@ -128,6 +129,7 @@ export async function canjearReclamo(
       reclamo.beneficio.ventanasHorarias,
       reclamo.beneficio.diasValidos as number[],
     ),
+    eventoFechaInicio: reclamo.beneficio.evento?.fechaInicio ?? null,
   });
   const ventanasHorarias = getNormalizedVentanasHorarias(
     reclamo.beneficio.ventanasHorarias,

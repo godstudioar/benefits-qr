@@ -211,6 +211,7 @@ async function _getPublicBenefitsCatalogRaw(
       ) tw ON true
       WHERE b."esPublico" = true
         AND b."deletedAt" IS NULL
+        AND b."eventoId" IS NULL
         AND l."isTest" = false
         AND l."active" = true
         ${nombreFilter}
@@ -362,6 +363,7 @@ export async function getFeaturedPublicBenefitsRaw(limit: number): Promise<Publi
       ) tw ON true
       WHERE b."esPublico" = true
         AND b."deletedAt" IS NULL
+        AND b."eventoId" IS NULL
         AND l."isTest" = false
         AND l."active" = true
     ),
@@ -477,6 +479,7 @@ async function _getFilteredLocalesForPublicBenefitsRaw(
       ) tw ON true
       WHERE b."esPublico" = true
         AND b."deletedAt" IS NULL
+        AND b."eventoId" IS NULL
         AND l.lat IS NOT NULL
         AND l.lng IS NOT NULL
         AND l."isTest" = false

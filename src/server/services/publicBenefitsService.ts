@@ -9,6 +9,7 @@ import {
   type PublicBenefitsCatalogRaw,
   type PublicBenefitsFiltersInput,
 } from "@/server/repositories/publicBenefitsRepository";
+import { getEventoBenefitsCatalogRaw } from "@/server/repositories/eventoBenefitsRepository";
 
 export type { PublicBenefitsFiltersInput };
 
@@ -85,4 +86,16 @@ export async function getFeaturedPublicBenefits(limit: number) {
 
 export async function getFilteredPublicBenefitsLocales(filters: PublicBenefitsFiltersInput = {}) {
   return getFilteredLocalesForPublicBenefitsRaw(filters);
+}
+
+export async function getEventoBenefitsPageData(eventoId: string, page: number, pageSize: number, filters: PublicBenefitsFiltersInput = {}) {
+  const raw = await getEventoBenefitsCatalogRaw(eventoId, page, pageSize, filters);
+  const total = Number(raw.total ?? 0);
+  const beneficios = hydratePublicBenefits(raw);
+
+  return {
+    beneficios,
+    total,
+    totalPages: Math.ceil(total / pageSize),
+  };
 }

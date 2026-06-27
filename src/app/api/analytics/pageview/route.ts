@@ -17,6 +17,12 @@ function getClientIp(req: NextRequest) {
   return req.headers.get("x-real-ip") ?? "";
 }
 
+function isLocalhostRequest(req: NextRequest) {
+  const host = req.headers.get("host") ?? "";
+  const hostname = host.split(":")[0].toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
 function buildVisitorHash(req: NextRequest) {
   const ip = getClientIp(req);
   const userAgent = req.headers.get("user-agent") ?? "";
@@ -34,6 +40,10 @@ export async function POST(req: NextRequest) {
     body = await req.json();
   } catch {
     return apiError("Cuerpo inválido", 400, "INVALID_BODY");
+  }
+
+  if (isLocalhostRequest(req)) {
+    return apiSuccess({ ok: true, skipped: true }, 200);
   }
 
   const path = normalizePath(String((body as Record<string, unknown>)?.path ?? "/"));

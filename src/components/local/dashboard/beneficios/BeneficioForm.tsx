@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronDown, Clock3, Globe, ShieldCheck } from "lucide-react";
+import { CalendarDays, ChevronDown, Clock3, Globe, PartyPopper, ShieldCheck } from "lucide-react";
 import type { MedioPago } from "@/generated/prisma/client";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -44,6 +44,15 @@ export type BeneficioFormInitialData = {
   esAcumulable?: boolean;
   condicionesExtra?: string | null;
   maxUsosPorCliente?: number | null;
+  eventoId?: string | null;
+};
+
+type EventoSeleccionable = {
+  id: string;
+  nombre: string;
+  slug: string;
+  fechaInicio: string;
+  fechaFin: string;
 };
 
 export type BeneficioFormSubmitConfig = {
@@ -155,6 +164,18 @@ export default function BeneficioForm({
   const [isDaysOpen, setIsDaysOpen] = useState(mode === "edit");
   const [isVisibilityOpen, setIsVisibilityOpen] = useState(mode === "edit");
   const [isConditionsOpen, setIsConditionsOpen] = useState(mode === "edit");
+  const [eventoId, setEventoId] = useState<string | null>(initialData?.eventoId ?? null);
+  const [eventosDisponibles, setEventosDisponibles] = useState<EventoSeleccionable[]>([]);
+
+  useEffect(() => {
+    fetch("/api/eventos/seleccionables")
+      .then((r) => r.json())
+      .then((data) => setEventosDisponibles(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  const selectedEvento = eventosDisponibles.find((e) => e.id === eventoId) ?? null;
+  const isEventoCupon = eventoId !== null;
 
   const minDate = getTodayDateString();
   const todosLosDias = diasValidos.length === 0;
@@ -244,14 +265,17 @@ export default function BeneficioForm({
 
     const formValidation = validateBeneficioFormSubmission({
       descripcion,
-      fechaExpiracion,
+      fechaExpiracion: isEventoCupon ? "9999-12-31" : fechaExpiracion,
       maxUsos,
       maxUsosPorCliente,
     });
 
     if (!formValidation.ok) {
-      setFieldErrors({ [formValidation.field]: formValidation.message });
-      return;
+      if (formValidation.field === "fechaExpiracion" && isEventoCupon) {
+      } else {
+        setFieldErrors({ [formValidation.field]: formValidation.message });
+        return;
+      }
     }
 
     if (useTimeWindows) {
@@ -279,14 +303,15 @@ export default function BeneficioForm({
 
     const requestBody: Record<string, unknown> = {
       descripcion,
-      fechaExpiracion,
-      maxUsos: formValidation.parsedMaxUsos,
+      fechaExpiracion: isEventoCupon ? undefined : fechaExpiracion,
+      maxUsos: formValidation.ok ? formValidation.parsedMaxUsos : null,
       diasValidos,
-      esPublico,
+      esPublico: isEventoCupon ? false : esPublico,
       mediosPago,
       esAcumulable,
       condicionesExtra: condicionesExtra || null,
-      maxUsosPorCliente: formValidation.parsedMaxUsosPorCliente,
+      maxUsosPorCliente: formValidation.ok ? formValidation.parsedMaxUsosPorCliente : null,
+      eventoId: eventoId || null,
     };
 
     if (serializedWindows !== undefined) {
@@ -331,6 +356,38 @@ export default function BeneficioForm({
         </div>
       ) : null}
 
+      {eventosDisponibles.length > 0 && (
+        <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
+          <div className="flex items-start gap-3 lg:gap-2.5 2xl:gap-3">
+            <div className="rounded-xl bg-accent-soft p-2 text-accent">
+              <PartyPopper className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="mb-2 text-sm font-semibold text-text-primary lg:text-[13px] 2xl:text-sm">
+                Vincular a evento
+              </h2>
+              <select
+                value={eventoId ?? ""}
+                onChange={(e) => setEventoId(e.target.value || null)}
+                className="w-full rounded-xl border border-border-default bg-surface py-2.5 px-3 text-base text-text-primary shadow-sm outline-none transition-[border-color,box-shadow] duration-200 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary-soft sm:text-sm"
+              >
+                <option value="">Sin evento (cupón normal)</option>
+                {eventosDisponibles.map((ev) => (
+                  <option key={ev.id} value={ev.id}>
+                    {ev.nombre} ({ev.fechaInicio.slice(0, 10)} → {ev.fechaFin.slice(0, 10)})
+                  </option>
+                ))}
+              </select>
+              {selectedEvento && (
+                <p className="mt-2 text-xs text-accent">
+                  Vigencia automática: {selectedEvento.fechaInicio.slice(0, 10)} → {selectedEvento.fechaFin.slice(0, 10)}. No aparecerá en cupones públicos.
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-3.5 2xl:gap-4">
         <div className="sm:col-span-2 lg:col-span-3">
           <Input
@@ -348,18 +405,20 @@ export default function BeneficioForm({
           />
         </div>
 
-        <DatePicker
-          label="Fecha de expiración"
-          labelHelp={BENEFICIO_FIELD_HELP.fechaExpiracion}
-          value={fechaExpiracion}
-          onChange={(value) => {
-            setFechaExpiracion(value);
-            clearFieldError("fechaExpiracion");
-          }}
-          min={minDate}
-          error={fieldErrors.fechaExpiracion}
-          required
-        />
+        {!isEventoCupon && (
+          <DatePicker
+            label="Fecha de expiración"
+            labelHelp={BENEFICIO_FIELD_HELP.fechaExpiracion}
+            value={fechaExpiracion}
+            onChange={(value) => {
+              setFechaExpiracion(value);
+              clearFieldError("fechaExpiracion");
+            }}
+            min={minDate}
+            error={fieldErrors.fechaExpiracion}
+            required
+          />
+        )}
 
         <Input
           label="Máximo de usos"
@@ -509,7 +568,7 @@ export default function BeneficioForm({
             {useTimeWindows && !todosLosDias ? (
               <div className="mt-3 space-y-3 lg:mt-2.5 lg:space-y-2.5 2xl:mt-3 2xl:space-y-3">
                 {selectedDaysWindowDrafts.map(({ day, draft }) => (
-                  <div key={day} className="grid grid-cols-2 gap-3 rounded-xl border border-border-default/60 bg-surface px-3 py-3 sm:grid-cols-[minmax(0,1fr)_140px_140px] sm:items-start lg:px-3 lg:py-2.5 2xl:px-3 2xl:py-3">
+                  <div key={day} className="grid grid-cols-2 gap-3 rounded-xl border border-border-default/60 bg-surface px-3 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:items-start lg:px-3 lg:py-2.5 2xl:px-3 2xl:py-3">
                     <div className="col-span-2 sm:col-span-1">
                       <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
                         {getDiaLabel(day, "full").charAt(0).toUpperCase() + getDiaLabel(day, "full").slice(1)}
@@ -548,7 +607,7 @@ export default function BeneficioForm({
         </div> : null}
       </section>
 
-      <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
+      {!isEventoCupon && <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
         <div className="flex items-start gap-2">
           <button
             type="button"
@@ -601,7 +660,7 @@ export default function BeneficioForm({
             />
           </button>
         </div> : null}
-      </section>
+      </section>}
 
       <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
         <div className="flex items-start gap-2">

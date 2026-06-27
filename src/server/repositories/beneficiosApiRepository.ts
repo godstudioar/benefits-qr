@@ -16,6 +16,7 @@ export type BeneficioEditRecord = {
   condicionesExtra: string | null;
   maxUsosPorCliente: number | null;
   localId: string;
+  eventoId: string | null;
 };
 
 export async function findBeneficiosByLocal(localId: string) {
@@ -41,6 +42,7 @@ export async function createBeneficio(data: {
   condicionesExtra: string | null;
   maxUsosPorCliente: number | null;
   localId: string;
+  eventoId?: string | null;
 }) {
   return prisma.beneficio.create({
     data: {
@@ -86,6 +88,7 @@ export async function findBeneficioEditByLocal(id: string, localId: string) {
       esAcumulable: true,
       condicionesExtra: true,
       maxUsosPorCliente: true,
+      eventoId: true,
       reclamos: {
         select: {
           id: true,
@@ -112,6 +115,13 @@ export async function findBeneficioOwnedByLocalForUpdate(
       ventanasHorarias: true,
       esPublico: true,
       localId: true,
+      eventoId: true,
+      evento: {
+        select: {
+          id: true,
+          slug: true,
+        },
+      },
     },
   });
 }
@@ -132,7 +142,7 @@ export async function countBeneficioReclamosByEstados(
 export async function updateBeneficioPartial(
   tx: BeneficioTxClient,
   id: string,
-  data: Partial<Pick<BeneficioEditRecord, "descripcion" | "fechaExpiracion" | "maxUsos" | "diasValidos" | "ventanasHorarias" | "esPublico" | "mediosPago" | "esAcumulable" | "condicionesExtra" | "maxUsosPorCliente">>,
+  data: Partial<Pick<BeneficioEditRecord, "descripcion" | "fechaExpiracion" | "maxUsos" | "diasValidos" | "ventanasHorarias" | "esPublico" | "mediosPago" | "esAcumulable" | "condicionesExtra" | "maxUsosPorCliente" | "eventoId">>,
 ) {
   const { ventanasHorarias, ...restData } = data;
 
