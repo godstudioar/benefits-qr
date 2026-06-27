@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { requireLocalAuth } from "@/lib/auth";
 import { apiError, apiSuccess } from "@/lib/apiResponse";
@@ -85,6 +85,29 @@ export async function PATCH(
   revalidatePath(`/beneficio/${id}`);
   revalidatePath("/beneficios");
   revalidatePath("/");
+
+  const data = result.data as {
+    oldEventoSlug?: string | null;
+    newEventoSlug?: string | null;
+    oldEventoId?: string | null;
+    newEventoId?: string | null;
+    esPublico?: boolean;
+  };
+  if (data.oldEventoSlug) {
+    revalidatePath(`/eventos/${data.oldEventoSlug}`);
+  }
+  if (data.newEventoSlug && data.newEventoSlug !== data.oldEventoSlug) {
+    revalidatePath(`/eventos/${data.newEventoSlug}`);
+  }
+  if (data.oldEventoId) {
+    revalidateTag(`evento-benefits-${data.oldEventoId}`, "max");
+  }
+  if (data.newEventoId && data.newEventoId !== data.oldEventoId) {
+    revalidateTag(`evento-benefits-${data.newEventoId}`, "max");
+  }
+  if ((data.oldEventoSlug || data.newEventoSlug) && data.esPublico) {
+    revalidatePath("/beneficios");
+  }
 
   return apiSuccess(result.data as Record<string, unknown>, result.status);
 }

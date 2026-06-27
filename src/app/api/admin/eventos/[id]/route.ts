@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getAdminSessionFromCookies } from "@/lib/adminAuth";
 import { apiError, apiSuccess } from "@/lib/apiResponse";
-import { updateEventoFlow } from "@/server/services/eventosService";
+import { updateEventoFlow, deleteEventoFlow } from "@/server/services/eventosService";
 
 async function requireAdmin() {
   const session = await getAdminSessionFromCookies();
@@ -28,4 +28,28 @@ export async function PATCH(
   revalidatePath("/admin");
   revalidatePath("/");
   return apiSuccess(result.data, result.status);
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const err = await requireAdmin();
+  if (err) return err;
+
+  const { id } = await params;
+  const result = await deleteEventoFlow(id);
+
+  if (!result.ok) {
+    return apiError(result.error, result.status);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  if (result.data.slug) {
+    revalidatePath(`/eventos/${result.data.slug}`);
+    revalidateTag(`evento-benefits-${id}`, "max");
+  }
+
+  return apiSuccess(result.data);
 }

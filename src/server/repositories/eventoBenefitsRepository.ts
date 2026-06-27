@@ -144,6 +144,6 @@ export const getEventoBenefitsCatalogRaw = (
   return unstable_cache(
     async () => _getEventoBenefitsCatalogRaw(eventoId, page, pageSize, filters),
     cacheKey,
-    { revalidate: 60 },
+    { revalidate: 60, tags: [`evento-benefits-${eventoId}`] },
   )();
 };

@@ -9,7 +9,10 @@ import {
   countBeneficiosByEvento,
   countCanjesByEvento,
   countLocalesByEvento,
+  getCanjeadosPorLocalByEvento,
+  countEventoPageviewVisitors,
 } from "@/server/repositories/eventosRepository";
+import { prisma } from "@/lib/prisma";
 import {
   optimizeImageFile,
   uploadImageToStorage,
@@ -45,8 +48,12 @@ export async function listAllEventos() {
   const eventos = await findAllEventos();
   const enriched = await Promise.all(
     eventos.map(async (e) => {
-      const canjeados = await countCanjesByEvento(e.id);
-      return { ...e, canjeados };
+      const [canjeados, canjeadosPorLocal, visitantesEvento] = await Promise.all([
+        countCanjesByEvento(e.id),
+        getCanjeadosPorLocalByEvento(e.id),
+        countEventoPageviewVisitors(e.slug),
+      ]);
+      return { ...e, canjeados, canjeadosPorLocal, visitantesEvento };
     }),
   );
   return enriched;
@@ -202,4 +209,34 @@ export async function uploadEventoImageFlow(
   await updateEvento(eventoId, { imageUrl: uploadResult.url });
 
   return { ok: true, status: 200, data: { url: uploadResult.url } };
+}
+
+export async function deleteEventoFlow(eventoId: string) {
+  const evento = await findEventoById(eventoId);
+  if (!evento) {
+    return { ok: false as const, status: 404, error: "Evento no encontrado." };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const beneficios = await tx.beneficio.findMany({
+      where: { eventoId, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (beneficios.length > 0) {
+      const ids = beneficios.map((b) => b.id);
+      await tx.beneficio.updateMany({
+        where: { id: { in: ids } },
+        data: {
+          eventoId: null,
+          fechaExpiracion: new Date(),
+          esPublico: false,
+        },
+      });
+    }
+
+    await tx.evento.delete({ where: { id: eventoId } });
+  });
+
+  return { ok: true as const, status: 200, data: { id: eventoId, slug: evento.slug } };
 }

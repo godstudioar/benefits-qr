@@ -54,6 +54,7 @@ type NormalizedBeneficioInput = Partial<{
   esAcumulable: boolean;
   condicionesExtra: string | null;
   maxUsosPorCliente: number | null;
+  eventoId: string | null;
 }>;
 
 function createServiceError(status: number, code: string, message: string, field?: string): ServiceError {
@@ -222,6 +223,16 @@ function normalizeBeneficioInput(
     }
   }
 
+  if (hasOwnInputField(input, "eventoId")) {
+    if (input.eventoId === null || input.eventoId === "") {
+      normalized.eventoId = null;
+    } else if (typeof input.eventoId !== "string") {
+      return createServiceError(400, "INVALID_EVENTO", "El evento seleccionado no es válido.", "eventoId");
+    } else {
+      normalized.eventoId = input.eventoId;
+    }
+  }
+
   return { ok: true, data: normalized };
 }
 
@@ -329,6 +340,7 @@ export async function getBeneficioEditPageData(id: string, localId: string) {
       esAcumulable: beneficio.esAcumulable,
       condicionesExtra: beneficio.condicionesExtra,
       maxUsosPorCliente: beneficio.maxUsosPorCliente,
+      eventoId: beneficio.eventoId,
     },
     constraints: {
       canjeados,
@@ -349,6 +361,18 @@ export async function updateBeneficioFlow(
     return normalized;
   }
 
+  let newEvento: { id: string; slug: string; fechaFin: Date } | null = null;
+  if (normalized.data.eventoId !== undefined && normalized.data.eventoId !== null) {
+    const evento = await findEventoById(normalized.data.eventoId);
+    if (!evento || !evento.activo) {
+      return createServiceError(400, "EVENTO_NOT_FOUND", "El evento seleccionado no existe o no está activo.");
+    }
+    if (evento.fechaFin < new Date()) {
+      return createServiceError(400, "EVENTO_EXPIRED", "El evento seleccionado ya finalizó.");
+    }
+    newEvento = evento;
+  }
+
   const runAttempt = async () => {
     return prisma.$transaction(
       async (tx) => {
@@ -357,6 +381,10 @@ export async function updateBeneficioFlow(
         if (!beneficio) {
           return createServiceError(404, "BENEFICIO_NOT_FOUND", "Cupón no encontrado");
         }
+
+        const oldEventoSlug = beneficio.evento?.slug ?? null;
+        const oldEventoId = beneficio.eventoId ?? null;
+        const newEventoId = newEvento?.id ?? (normalized.data.eventoId === null ? null : null);
 
         const currentDiasValidos = beneficio.diasValidos as number[];
         const resolvedDiasValidos = normalized.data.diasValidos ?? currentDiasValidos;
@@ -371,6 +399,10 @@ export async function updateBeneficioFlow(
 
         if (normalized.data.ventanasHorarias !== undefined) {
           normalized.data.ventanasHorarias = resolvedWindows.value;
+        }
+
+        if (normalized.data.eventoId !== undefined && newEvento) {
+          normalized.data.fechaExpiracion = newEvento.fechaFin;
         }
 
         if (normalized.data.fechaExpiracion !== undefined || normalized.data.ventanasHorarias !== undefined) {
@@ -413,11 +445,11 @@ export async function updateBeneficioFlow(
         }
 
         if (Object.keys(normalized.data).length === 0) {
-          return { ok: true as const, status: 200, data: beneficio };
+          return { ok: true as const, status: 200, data: { ...beneficio, oldEventoSlug, oldEventoId, newEventoSlug: newEvento?.slug ?? null, newEventoId } };
         }
 
         const updatedBeneficio = await updateBeneficioPartial(tx, id, normalized.data);
-        return { ok: true as const, status: 200, data: updatedBeneficio };
+        return { ok: true as const, status: 200, data: { ...updatedBeneficio, oldEventoSlug, oldEventoId, newEventoSlug: newEvento?.slug ?? null, newEventoId } };
       },
       {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,

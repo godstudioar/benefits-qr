@@ -9,8 +9,13 @@ import AddressAutocomplete, {
   type SelectedAddress,
 } from "@/components/maps/AddressAutocomplete";
 import MapsProvider from "@/components/maps/MapsProvider";
-import { Camera, Pencil, X } from "lucide-react";
+import { Camera, Pencil, X, Eye, Users, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/Popover";
 
 type EventoRow = {
   id: string;
@@ -26,6 +31,8 @@ type EventoRow = {
   placeId: string | null;
   activo: boolean;
   canjeados: number;
+  canjeadosPorLocal: Array<{ localId: string; nombre: string | null; canjeados: number }>;
+  visitantesEvento: number;
   _count: { beneficios: number };
 };
 
@@ -155,6 +162,8 @@ function EventoForm({
       placeId: data.placeId ?? null,
       activo: data.activo ?? true,
       canjeados: initial?.canjeados ?? 0,
+      canjeadosPorLocal: initial?.canjeadosPorLocal ?? [],
+      visitantesEvento: initial?.visitantesEvento ?? 0,
       _count: initial?._count ?? { beneficios: 0 },
     };
 
@@ -339,6 +348,21 @@ export default function AdminEventosSection({
     }
   }
 
+  async function handleDelete(evento: EventoRow) {
+    const confirmed = window.confirm(
+      `¿Eliminar el evento "${evento.nombre}"?\n\nLos ${evento._count.beneficios} cupones vinculados pasarán a vencidos y dejarán de estar públicos.`,
+    );
+    if (!confirmed) return;
+
+    const res = await fetch(`/api/admin/eventos/${evento.id}`, {
+      method: "DELETE",
+    });
+
+    if (res.ok) {
+      setEventos((prev) => prev.filter((e) => e.id !== evento.id));
+    }
+  }
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
@@ -416,8 +440,41 @@ export default function AdminEventosSection({
               <Badge variant="muted">
                 {evento._count.beneficios} cupones
               </Badge>
-              <Badge variant="secondary">
-                {evento.canjeados} canjeados
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Badge variant="secondary" className="cursor-pointer gap-1">
+                    {evento.canjeados} canjeados
+                    <Eye className="h-3 w-3" />
+                  </Badge>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-64 p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
+                    Canjeados por local
+                  </p>
+                  {evento.canjeadosPorLocal.length === 0 ? (
+                    <p className="text-sm text-text-muted">Sin canjes aún.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {evento.canjeadosPorLocal.map((row) => (
+                        <div
+                          key={row.localId}
+                          className="flex items-center justify-between text-sm"
+                        >
+                          <span className="truncate pr-2 text-text-primary">
+                            {row.nombre || "Local sin nombre"}
+                          </span>
+                          <span className="shrink-0 font-medium text-text-primary">
+                            {row.canjeados}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+              <Badge variant="light" className="gap-1">
+                <Users className="h-3 w-3" />
+                {evento.visitantesEvento}
               </Badge>
               <Badge variant={evento.activo ? "success" : "warning"}>
                 {evento.activo ? "Activo" : "Inactivo"}
@@ -429,6 +486,14 @@ export default function AdminEventosSection({
                 title="Editar evento"
               >
                 <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(evento)}
+                className="rounded-lg p-1 text-text-muted transition-colors hover:bg-danger-soft hover:text-danger"
+                title="Eliminar evento"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
