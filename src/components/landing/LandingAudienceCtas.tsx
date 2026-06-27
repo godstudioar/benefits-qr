@@ -63,22 +63,27 @@ export default function LandingAudienceCtas() {
                 key={cta.title}
                 className={`group rounded-2xl border p-4 text-left transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-0.5 lg:p-5 ${cta.className}`}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${cta.iconClassName}`}>
-                    {cta.icon}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h2 className={`text-sm font-semibold ${cta.titleClassName}`}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${cta.iconClassName}`}>
+                      {cta.icon}
+                    </div>
+                    <h2 className={`truncate text-sm font-semibold ${cta.titleClassName}`}>
                       {cta.title}
                     </h2>
-                    <p className={`text-xs leading-relaxed ${cta.descriptionClassName}`}>
+                  </div>
+                  <p className={`text-xs leading-relaxed sm:hidden ${cta.descriptionClassName}`}>
+                    {cta.description}
+                  </p>
+                  <div className="flex items-center gap-3 sm:contents">
+                    <p className={`hidden min-w-0 flex-1 text-xs leading-relaxed sm:block ${cta.descriptionClassName}`}>
                       {cta.description}
                     </p>
+                    <LinkButton href={cta.href} variant={cta.buttonVariant} size="sm" className="w-full sm:w-auto">
+                      {cta.action}
+                      <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                    </LinkButton>
                   </div>
-                  <LinkButton href={cta.href} variant={cta.buttonVariant} size="sm">
-                    {cta.action}
-                    <ArrowRight className="h-3 w-3" aria-hidden="true" />
-                  </LinkButton>
                 </div>
               </div>
             ))}

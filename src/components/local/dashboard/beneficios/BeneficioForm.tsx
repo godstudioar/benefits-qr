@@ -568,8 +568,8 @@ export default function BeneficioForm({
             {useTimeWindows && !todosLosDias ? (
               <div className="mt-3 space-y-3 lg:mt-2.5 lg:space-y-2.5 2xl:mt-3 2xl:space-y-3">
                 {selectedDaysWindowDrafts.map(({ day, draft }) => (
-                  <div key={day} className="grid grid-cols-2 gap-3 rounded-xl border border-border-default/60 bg-surface px-3 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:items-start lg:px-3 lg:py-2.5 2xl:px-3 2xl:py-3">
-                    <div className="col-span-2 sm:col-span-1">
+                  <div key={day} className="rounded-xl border border-border-default/60 bg-surface px-3 py-3 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:items-start sm:gap-3 lg:px-3 lg:py-2.5 2xl:px-3 2xl:py-3">
+                    <div className="sm:col-span-1">
                       <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
                         {getDiaLabel(day, "full").charAt(0).toUpperCase() + getDiaLabel(day, "full").slice(1)}
                       </p>
@@ -580,21 +580,23 @@ export default function BeneficioForm({
                       </p>
                     </div>
 
-                    <Input
-                      label="Desde"
-                      type="time"
-                      value={draft.start}
-                      onChange={(event) => handleWindowDraftChange(day, "start", event.target.value)}
-                      step={60}
-                    />
+                    <div className="mt-3 grid grid-cols-2 gap-3 sm:col-span-2 sm:mt-0">
+                      <Input
+                        label="Desde"
+                        type="time"
+                        value={draft.start}
+                        onChange={(event) => handleWindowDraftChange(day, "start", event.target.value)}
+                        step={60}
+                      />
 
-                    <Input
-                      label="Hasta"
-                      type="time"
-                      value={draft.end}
-                      onChange={(event) => handleWindowDraftChange(day, "end", event.target.value)}
-                      step={60}
-                    />
+                      <Input
+                        label="Hasta"
+                        type="time"
+                        value={draft.end}
+                        onChange={(event) => handleWindowDraftChange(day, "end", event.target.value)}
+                        step={60}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
