@@ -289,8 +289,8 @@ export async function createBeneficioFlow(
     descripcion: normalized.data.descripcion!,
     fechaExpiracion: eventoFechaFin ?? fechaExpiracion,
     maxUsos: normalized.data.maxUsos ?? null,
-    diasValidos: eventoId ? [] : diasValidos,
-    ventanasHorarias: eventoId ? null : normalizedWindows.value,
+    diasValidos,
+    ventanasHorarias: normalizedWindows.value,
     esPublico: eventoId ? false : (normalized.data.esPublico ?? false),
     mediosPago: normalized.data.mediosPago ?? [],
     esAcumulable: normalized.data.esAcumulable ?? true,
@@ -459,7 +459,7 @@ export async function getBeneficioById(
 export async function deleteBeneficioFlow(
   id: string,
   localId: string
-): Promise<{ ok: true; status: number } | ServiceError> {
+): Promise<{ ok: true; status: number; eventoId: string | null } | ServiceError> {
   const beneficio = await findBeneficioOwnedByLocal(id, localId);
 
   if (!beneficio) {
@@ -468,7 +468,7 @@ export async function deleteBeneficioFlow(
 
   await softDeleteBeneficioAndDeleteReclamos(id);
 
-  return { ok: true, status: 200 };
+  return { ok: true, status: 200, eventoId: beneficio.eventoId ?? null };
 }
 
 export async function getBeneficioStats(

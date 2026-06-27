@@ -39,6 +39,9 @@ export async function DELETE(
   revalidatePath("/dashboard");
   revalidatePath("/beneficios");
   revalidatePath("/");
+  if (result.eventoId) {
+    revalidatePath("/eventos", "layout");
+  }
   return apiSuccess({ success: true }, result.status);
 }
 

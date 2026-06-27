@@ -278,7 +278,7 @@ export default function BeneficioForm({
       }
     }
 
-    if (!isEventoCupon && useTimeWindows) {
+    if (useTimeWindows) {
       if (todosLosDias || diasSeleccionados.length === 0) {
         setFieldErrors({ ventanasHorarias: "Seleccioná días específicos antes de configurar un horario." });
         return;
@@ -292,9 +292,9 @@ export default function BeneficioForm({
       }
     }
 
-    const serializedWindows = !isEventoCupon && useTimeWindows ? serializeWindowDrafts(diasSeleccionados, timeWindowDrafts) : null;
+    const serializedWindows = useTimeWindows ? serializeWindowDrafts(diasSeleccionados, timeWindowDrafts) : null;
 
-    if (!isEventoCupon && useTimeWindows && !serializedWindows) {
+    if (useTimeWindows && !serializedWindows) {
       setFieldErrors({ ventanasHorarias: "No pudimos interpretar el horario configurado. Revisá los valores cargados." });
       return;
     }
@@ -305,7 +305,7 @@ export default function BeneficioForm({
       descripcion,
       fechaExpiracion: isEventoCupon ? undefined : fechaExpiracion,
       maxUsos: formValidation.ok ? formValidation.parsedMaxUsos : null,
-      diasValidos: isEventoCupon ? [] : diasValidos,
+      diasValidos,
       esPublico: isEventoCupon ? false : esPublico,
       mediosPago,
       esAcumulable,
@@ -314,7 +314,7 @@ export default function BeneficioForm({
       eventoId: eventoId || null,
     };
 
-    if (!isEventoCupon && serializedWindows !== undefined) {
+    if (serializedWindows !== undefined) {
       requestBody.ventanasHorarias = serializedWindows;
     }
 
@@ -369,7 +369,7 @@ export default function BeneficioForm({
               <select
                 value={eventoId ?? ""}
                 onChange={(e) => setEventoId(e.target.value || null)}
-                className="h-10 w-full rounded-xl border border-border-default bg-surface py-2 px-3 text-sm text-text-primary shadow-sm outline-none transition-[border-color,box-shadow] duration-200 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary-soft"
+                className="w-full rounded-xl border border-border-default bg-surface py-2.5 px-3 text-base text-text-primary shadow-sm outline-none transition-[border-color,box-shadow] duration-200 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary-soft sm:text-sm"
               >
                 <option value="">Sin evento (cupón normal)</option>
                 {eventosDisponibles.map((ev) => (
@@ -451,7 +451,7 @@ export default function BeneficioForm({
         />
       </div>
 
-      {!isEventoCupon && <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
+      <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
         <div className="flex items-start gap-2">
           <button
             type="button"
@@ -568,7 +568,7 @@ export default function BeneficioForm({
             {useTimeWindows && !todosLosDias ? (
               <div className="mt-3 space-y-3 lg:mt-2.5 lg:space-y-2.5 2xl:mt-3 2xl:space-y-3">
                 {selectedDaysWindowDrafts.map(({ day, draft }) => (
-                  <div key={day} className="grid grid-cols-2 gap-3 rounded-xl border border-border-default/60 bg-surface px-3 py-3 sm:grid-cols-[minmax(0,1fr)_140px_140px] sm:items-start lg:px-3 lg:py-2.5 2xl:px-3 2xl:py-3">
+                  <div key={day} className="grid grid-cols-2 gap-3 rounded-xl border border-border-default/60 bg-surface px-3 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:items-start lg:px-3 lg:py-2.5 2xl:px-3 2xl:py-3">
                     <div className="col-span-2 sm:col-span-1">
                       <p className="text-sm font-medium text-text-primary lg:text-[13px] 2xl:text-sm">
                         {getDiaLabel(day, "full").charAt(0).toUpperCase() + getDiaLabel(day, "full").slice(1)}
@@ -605,7 +605,7 @@ export default function BeneficioForm({
             ) : null}
           </div>
         </div> : null}
-      </section>}
+      </section>
 
       {!isEventoCupon && <section className="rounded-2xl border border-border-default/80 bg-surface-muted/50 p-4 lg:p-3.5 2xl:p-4">
         <div className="flex items-start gap-2">

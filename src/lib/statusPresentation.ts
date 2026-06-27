@@ -73,6 +73,7 @@ export function getBeneficioAvailabilityPresentation({
   status,
   isWrongDay,
   isOutsideTimeWindow,
+  isEventoNotStarted = false,
   diasValidos,
   ventanasHorarias = null,
   referenceDate,
@@ -80,6 +81,7 @@ export function getBeneficioAvailabilityPresentation({
   status: BeneficioStatus;
   isWrongDay: boolean;
   isOutsideTimeWindow?: boolean;
+  isEventoNotStarted?: boolean;
   diasValidos: number[];
   ventanasHorarias?: BeneficioTimeWindows | null;
   referenceDate?: Date;
@@ -107,6 +109,15 @@ export function getBeneficioAvailabilityPresentation({
       badgeVariant: "danger",
       badgeLabel: "Agotado",
       message: getCouponBlockMessage(CouponBlockReason.BENEFICIO_MAX_USOS_REACHED),
+      isAvailable: false,
+    };
+  }
+
+  if (isEventoNotStarted) {
+    return {
+      badgeVariant: "warning",
+      badgeLabel: "Evento próximamente",
+      message: getCouponBlockMessage(CouponBlockReason.EVENTO_NOT_STARTED),
       isAvailable: false,
     };
   }

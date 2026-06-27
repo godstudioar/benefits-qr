@@ -6,7 +6,7 @@ import Playbooks from "@/components/landing/Playbooks";
 import EventosSection from "@/components/landing/EventosSection";
 import PublicBenefitsSection from "@/components/public-benefits/PublicBenefitsSection";
 
-export const revalidate = 60;
+export const revalidate = 0;
 
 export default function Home() {
   return (

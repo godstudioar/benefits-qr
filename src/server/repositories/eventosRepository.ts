@@ -4,7 +4,7 @@ export async function findAllEventos() {
   return prisma.evento.findMany({
     orderBy: { fechaInicio: "desc" },
     include: {
-      _count: { select: { beneficios: true } },
+      _count: { select: { beneficios: { where: { deletedAt: null } } } },
     },
   });
 }
@@ -25,7 +25,7 @@ export async function findEventosActivosFuturos() {
     },
     orderBy: { fechaInicio: "asc" },
     include: {
-      _count: { select: { beneficios: true } },
+      _count: { select: { beneficios: { where: { deletedAt: null } } } },
     },
   });
 }

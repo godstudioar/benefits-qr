@@ -27,9 +27,13 @@ export async function POST(req: NextRequest) {
   }
 
   revalidatePath("/dashboard");
-  if ((result.data as { esPublico?: boolean }).esPublico) {
+  revalidatePath("/");
+  const data = result.data as { esPublico?: boolean; eventoId?: string | null; evento?: { slug?: string } | null };
+  if (data.esPublico) {
     revalidatePath("/beneficios");
-    revalidatePath("/");
+  }
+  if (data.eventoId) {
+    revalidatePath("/eventos", "layout");
   }
   return apiSuccess(result.data as Record<string, unknown>, result.status);
 }
