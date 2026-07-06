@@ -4,7 +4,6 @@ import LandingHero from "@/components/landing/LandingHero";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import Playbooks from "@/components/landing/Playbooks";
 import EventosSection from "@/components/landing/EventosSection";
-import PublicBenefitsSection from "@/components/public-benefits/PublicBenefitsSection";
 
 export const revalidate = 0;
 
@@ -15,7 +14,6 @@ export default function Home() {
       <LandingHero />
       <LandingAudienceCtas />
 
-      <PublicBenefitsSection />
       <EventosSection />
       <HowItWorks />
       <Playbooks />
