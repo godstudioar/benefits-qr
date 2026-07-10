@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import { ArrowRight } from "lucide-react";
 import LinkButton from "@/components/ui/LinkButton";
 import Reveal from "@/components/ui/Reveal";
 import PublicBenefitCard from "@/components/public-benefits/PublicBenefitCard";
 import LandingLocalesMap from "@/components/public-benefits/LandingLocalesMap";
+import LandingMerchantMarquee from "@/components/landing/LandingMerchantMarquee";
 import { getFeaturedPublicBenefits } from "@/server/services/publicBenefitsService";
 import { getTodosLocalesRaw } from "@/server/repositories/localesMapRepository";
 
@@ -84,6 +86,10 @@ export default async function LandingHero() {
             </div>
           </div>
         </Reveal>
+
+        <Suspense fallback={<div className="min-h-[14vh] sm:min-h-[22vh] lg:min-h-[16vh]" />}>
+          <LandingMerchantMarquee className="mt-10 lg:mt-12" />
+        </Suspense>
       </div>
     </section>
   );
