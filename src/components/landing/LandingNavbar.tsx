@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "#inicio", label: "Inicio" },
   { href: "#perfil", label: "Ingresar" },
-  { href: "#beneficios", label: "Cupones" },
   { href: "#eventos", label: "Eventos" },
   { href: "#como-funciona", label: "Cómo funciona" },
   { href: "#ideas", label: "Ideas" },
@@ -53,9 +52,9 @@ export default function LandingNavbar() {
   }, []);
 
   useEffect(() => {
-    const sections = NAV_ITEMS.map((item) => document.querySelector<HTMLElement>(item.href)).filter(
-      (section): section is HTMLElement => section !== null,
-    );
+    const sections = NAV_ITEMS.map((item) =>
+      item.href.startsWith("#") ? document.querySelector<HTMLElement>(item.href) : null,
+    ).filter((section): section is HTMLElement => section !== null);
 
     if (sections.length === 0) {
       return;
@@ -95,6 +94,11 @@ export default function LandingNavbar() {
     event: MouseEvent<HTMLAnchorElement>,
     href: (typeof NAV_ITEMS)[number]["href"],
   ) => {
+    if (!href.startsWith("#")) {
+      setIsOpen(false);
+      return;
+    }
+
     const target = document.querySelector<HTMLElement>(href);
 
     if (!target) {
