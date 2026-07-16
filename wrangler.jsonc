@@ -1,7 +1,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": ".open-next/worker.js",
-	"name": "benefitqr",
+	"name": "benefits-qr",
 	"compatibility_date": "2026-07-16",
 	"compatibility_flags": [
 		"nodejs_compat",
