@@ -1,17 +1,14 @@
 import type { NextConfig } from "next";
 
 const securityHeaders = [
-  // Prevent clickjacking
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
-  // Prevent MIME type sniffing
   { key: "X-Content-Type-Options", value: "nosniff" },
-  // Enable browser XSS filter (legacy browsers)
   { key: "X-XSS-Protection", value: "1; mode=block" },
-  // Control referrer info sent with requests
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  // Restrict browser features
-  { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" },
-  // Prevent injection of external scripts (Google Maps APIs allowed)
+  {
+    key: "Permissions-Policy",
+    value: "camera=(self), microphone=(), geolocation=()",
+  },
   {
     key: "Content-Security-Policy",
     value: [
@@ -29,6 +26,13 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.100.2"],
 
+  outputFileTracingIncludes: {
+    "**/*": [
+      "./node_modules/pg-cloudflare/dist/**",
+      "./node_modules/pg-cloudflare/esm/**",
+    ],
+  },
+
   async headers() {
     return [
       {
@@ -41,4 +45,6 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 
-import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());
+import("@opennextjs/cloudflare").then((m) =>
+  m.initOpenNextCloudflareForDev(),
+);
